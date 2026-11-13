@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Baja el ruido de Selenium / HttpClient para que en consola se lea
+    el avance del escenario Gherkin y no el trafico del WebDriver.
+-->
+<configuration>
+    <appender name="CONSOLA" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss} %-5level %logger{25} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="org.openqa.selenium" level="WARN"/>
+    <logger name="org.apache.hc" level="WARN"/>
+    <logger name="io.netty" level="WARN"/>
+    <logger name="net.thucydides" level="WARN"/>
+    <logger name="net.serenitybdd" level="INFO"/>
+
+    <root level="WARN">
+        <appender-ref ref="CONSOLA"/>
+    </root>
+</configuration>
