@@ -1,0 +1,285 @@
+================================================================================
+ EJERCICIO 1 - HALLAZGOS Y CONCLUSIONES
+ Prueba E2E del flujo de compra en https://www.saucedemo.com/
+================================================================================
+
+Fecha de ejecucion : 13/11/2026
+Ambiente           : Windows 11 / JDK 25.0.2 / Chrome 157.0.8103.50
+Stack              : Serenity BDD 5.4.2 + Cucumber 8.0.4 + Screenplay
+Resultado          : 1 escenario ejecutado, 1 exitoso, 0 fallidos
+Duracion           : 16.3 s la primera ejecucion (incluye levantar Chrome y
+                     resolver el driver) / 5.3 s en ejecuciones en caliente
+Evidencia          : evidencias/reporte-serenity.zip (reporte HTML completo)
+                     evidencias/capturas/ (7 capturas clave del flujo)
+
+
+--------------------------------------------------------------------------------
+1. RESULTADO DEL EJERCICIO
+--------------------------------------------------------------------------------
+
+El flujo solicitado se automatizo completo y paso de punta a punta:
+
+  [OK] Autenticacion con standard_user / secret_sauce
+  [OK] Dos productos agregados al carrito
+       (Sauce Labs Backpack $29.99 y Sauce Labs Bike Light $9.99)
+  [OK] Contador del carrito en 2
+  [OK] Carrito mostrando exactamente los dos productos agregados
+  [OK] Formulario de compra diligenciado (Diego / Franco / 110111)
+  [OK] Resumen con Item total $39.98 + Tax $3.20 = Total $43.18
+  [OK] Confirmacion del pedido obtenida
+
+No se encontraron defectos funcionales bloqueantes en el camino feliz con el
+usuario standard_user. Los hallazgos de la seccion 2 son de disenio de la
+aplicacion y de automatizabilidad (testability), no fallas del flujo de compra.
+
+
+--------------------------------------------------------------------------------
+2. HALLAZGOS
+--------------------------------------------------------------------------------
+
+HALLAZGO 1 - El mensaje de confirmacion no existe en mayusculas en el DOM
+Severidad: informativo / alto impacto para la automatizacion
+--------------------------------------------------------------------------------
+El enunciado pide verificar la confirmacion "THANK YOU FOR YOUR ORDER". El texto
+real que entrega la aplicacion en el elemento [data-test='complete-header'] es:
+
+      Thank you for your order!
+
+Es decir: capitalizacion de frase y con signo de admiracion. La apariencia en
+mayusculas que se percibe en pantalla proviene de la tipografia/estilos del
+sitio, no del contenido del DOM.
+
+Consecuencia: una asercion de igualdad estricta contra el texto del enunciado
+(equalTo("THANK YOU FOR YOUR ORDER")) falla, aunque la compra haya sido exitosa.
+
+Como se resolvio: la pregunta OrderConfirmationMessage normaliza el texto a
+mayusculas y la asercion valida por contenido (containsString). De esta forma la
+prueba sigue expresada en los terminos del requerimiento, pero no se rompe por
+una decision de presentacion ni por el signo de admiracion final.
+Verificado en: evidencias/capturas/07-confirmacion-thank-you-for-your-order.png
+
+
+HALLAZGO 2 - Identificadores de los botones "Add to cart" no uniformes
+Severidad: medio (testability)
+--------------------------------------------------------------------------------
+En el listado de productos, el atributo de prueba del boton se genera en tiempo
+de ejecucion concatenando la accion y el nombre del producto y normalizando
+espacios, por ejemplo:
+
+      data-test="add-to-cart-sauce-labs-backpack"
+
+Existe ademas otro componente de boton en la aplicacion que renderiza el valor
+fijo data-test="add-to-cart", y el componente de boton asigna el mismo valor a
+los atributos data-test, id y name.
+
+Implicaciones:
+  a) Cualquier cambio en el nombre comercial de un producto (o en la regla de
+     normalizacion) rompe los localizadores que dependan del slug.
+  b) Al reutilizar el mismo valor como "id", dos botones equivalentes en una
+     misma vista producirian identificadores duplicados, lo que infringe la
+     regla de unicidad de "id" del estandar HTML y vuelve ambiguos tanto a los
+     lectores de pantalla como a los selectores por id.
+
+Como se resolvio: el localizador no usa el slug. Se ubica la tarjeta del
+producto por su nombre visible y desde ahi se baja al boton:
+
+   //div[@data-test='inventory-item']
+     [.//*[@data-test='inventory-item-name' and normalize-space()='{0}']]
+     //button[starts-with(@data-test,'add-to-cart')]
+
+Recomendacion al equipo de desarrollo: exponer un identificador estable por
+producto (por ejemplo data-test="add-to-cart-{idProducto}") en lugar de derivarlo
+del nombre, y garantizar la unicidad de "id" en todas las vistas.
+
+
+HALLAZGO 3 - Los campos de formulario no tienen etiqueta asociada
+Severidad: medio (accesibilidad)
+--------------------------------------------------------------------------------
+Ni el formulario de login ni el formulario de compra usan elementos <label>
+asociados a sus campos. La accesibilidad se resuelve con un atributo aria-label
+que toma el mismo texto del placeholder.
+
+Implicaciones: al escribir, el usuario pierde la referencia visual del campo
+(el placeholder desaparece), y la informacion del campo queda dependiendo de un
+unico atributo. Es un patron funcional pero fragil para lectores de pantalla y
+para pruebas de accesibilidad.
+
+Punto positivo observado: el mensaje de error del login si se expone con
+role="alert", que es la practica correcta para notificar errores a tecnologias
+de asistencia.
+
+
+HALLAZGO 4 - Advertencia de version de CDP en Selenium
+Severidad: bajo (entorno)
+--------------------------------------------------------------------------------
+Durante la ejecucion Selenium 4.52.0 emite:
+
+      WARNING: Unable to find an exact match for CDP version 157,
+      returning the closest version; found: 156
+
+Chrome 157 es mas nuevo que el soporte de DevTools incluido en Selenium 4.52.0.
+No afecta esta prueba (no utiliza el protocolo CDP), pero cualquier escenario
+que use interceptacion de red, emulacion de dispositivos o captura de logs del
+navegador via DevTools debera actualizar Selenium.
+
+
+HALLAZGO 5 - Funcionalidad fuera del alcance detectada en la confirmacion
+Severidad: informativo
+--------------------------------------------------------------------------------
+La pantalla de confirmacion ofrece un boton "Generate PDF order" que no forma
+parte del alcance solicitado. Queda identificado como candidato natural para una
+siguiente iteracion de pruebas (descarga del archivo, contenido del PDF,
+comportamiento en modo headless).
+
+
+HALLAZGO 6 - El checkout no modela medios de pago reales
+Severidad: informativo
+--------------------------------------------------------------------------------
+El resumen del pedido muestra valores fijos: "Payment Information: SauceCard
+#31337" y "Shipping Information: Free Pony Express Delivery!". Es decir, la
+aplicacion no modela pasarela de pago ni calculo de envio.
+
+Implicacion para la estrategia de pruebas: el E2E sobre este sitio no cubre el
+riesgo tipico de un e-commerce real (autorizacion de pago, rechazos, 3DS,
+reintentos). Si el objetivo fuera un comercio real, el alcance tendria que
+incluir esos casos y previsiblemente un ambiente de sandbox de la pasarela.
+
+
+HALLAZGO 7 - Calculo de impuestos y total: correcto
+Severidad: ninguno (verificacion positiva)
+--------------------------------------------------------------------------------
+Subtotal 29.99 + 9.99 = 39.98. Impuesto mostrado 3.20, equivalente al 8 % del
+subtotal (39.98 * 0.08 = 3.1984, redondeado a 2 decimales). Total 43.18,
+consistente con subtotal + impuesto. No se detectaron inconsistencias de
+redondeo.
+Verificado en: evidencias/capturas/06-resumen-del-pedido-total-43-18.png
+
+
+--------------------------------------------------------------------------------
+3. DECISIONES DE DISENIO DE LA AUTOMATIZACION
+--------------------------------------------------------------------------------
+
+[1] Serenity BDD + Cucumber + Screenplay
+    Screenplay es el patron que recomienda Serenity y separa con claridad tres
+    responsabilidades: QUE quiere lograr el usuario (Tasks), QUE observa
+    (Questions) y DONDE esta cada elemento (Targets). El resultado es que el
+    .feature, los step definitions y el reporte hablan el mismo lenguaje de
+    negocio, y los localizadores quedan aislados en una sola capa.
+
+[2] Gherkin en espaniol (# language: es)
+    El entregable y sus lectores estan en espaniol. Cucumber soporta el dialecto
+    nativamente, asi que no hay costo tecnico y si gana el negocio al poder leer
+    y validar el escenario.
+
+[3] Un solo escenario, con verificaciones intermedias
+    El enunciado pide un flujo, no una bateria de regresion. En lugar de
+    multiplicar escenarios, el unico escenario verifica tambien los puntos
+    intermedios criticos (contador del carrito y contenido del carrito), que son
+    los que permiten ubicar rapidamente DONDE se rompe el flujo si falla.
+
+[4] Localizadores por data-test, no por clases CSS ni por texto
+    Los atributos data-test son el contrato explicito que la aplicacion expone
+    para pruebas; las clases CSS cambian con el estilo. La unica excepcion es el
+    boton "Add to cart", por lo explicado en el Hallazgo 2.
+
+[5] Esperas explicitas, cero Thread.sleep
+    Cada transicion de pantalla espera por una condicion concreta
+    (WaitUntil ... isVisible), lo que elimina tanto los falsos negativos por
+    lentitud como los segundos muertos de las esperas fijas.
+
+[6] Evidencia automatica por accion
+    serenity.take.screenshots = FOR_EACH_ACTION deja 29 capturas que documentan
+    el flujo completo. Es deliberado para este entregable (el enunciado pide
+    insumos que sustenten la implementacion); para una suite grande en CI lo
+    recomendable es FOR_FAILURES, porque el reporte pesa ~12 MB con un solo
+    escenario.
+
+[7] Reproducibilidad: Maven Wrapper y driver automatico
+    El revisor solo necesita JDK y Chrome. Maven lo descarga el wrapper y el
+    chromedriver lo resuelve Selenium Manager segun la version de Chrome
+    instalada. No se versiona ningun binario ni se fija una version de driver
+    que caduque.
+
+[8] Pruebas como fase de integracion
+    El escenario corre en integration-test (Failsafe), no en test (Surefire).
+    Asi un "mvn test" en un pipeline no dispara un navegador por error, y las
+    pruebas E2E quedan separadas de las unitarias.
+
+[9] Ejecucion headless por defecto, visible bajo demanda
+    Headless para CI; -Dheadless.mode=false (o -Visible / --visible) para
+    diagnosticar visualmente cuando algo falla.
+
+
+--------------------------------------------------------------------------------
+4. RIESGOS IDENTIFICADOS
+--------------------------------------------------------------------------------
+
+[R1] Dependencia de un sitio publico de terceros
+     La suite depende de la disponibilidad de saucedemo.com, sobre el que no hay
+     SLA ni control de versiones. Un cambio en el front (como el del Hallazgo 1
+     o 2) rompe la automatizacion sin aviso.
+     Mitigacion: fijar la URL por configuracion (ya implementado), monitorear
+     los fallos por tipo y, en un proyecto real, trabajar contra un ambiente
+     propio y versionado.
+
+[R2] Acoplamiento al nombre comercial de los productos
+     Los productos se identifican por su nombre visible. Si cambian de nombre,
+     hay que actualizar el .feature.
+     Mitigacion aceptada a proposito: el nombre es justamente el dato que el
+     negocio entiende y valida; la alternativa (ids internos) haria el escenario
+     ilegible para quien no es tecnico.
+
+[R3] Version de JDK
+     Se ejecuto con JDK 25 sin incidentes, pero el bytecode se compila con
+     release 17 para no exigir un JDK reciente al revisor.
+
+[R4] Peso del reporte
+     Ver decision [6]: 12 MB de evidencia para un escenario no escala. Debe
+     ajustarse antes de crecer la suite.
+
+
+--------------------------------------------------------------------------------
+5. RECOMENDACIONES Y SIGUIENTES PASOS
+--------------------------------------------------------------------------------
+
+Sobre el producto (SauceDemo)
+  1. Unificar y estabilizar los identificadores de prueba de los botones de
+     carrito, garantizando la unicidad de "id" (Hallazgo 2).
+  2. Asociar <label> a los campos de los formularios de login y de compra
+     (Hallazgo 3).
+  3. Alinear el texto de confirmacion con lo que esperan los consumidores de la
+     interfaz, o documentarlo explicitamente (Hallazgo 1).
+
+Sobre la automatizacion
+  4. Ampliar la cobertura a casos negativos y a los usuarios defectuosos que la
+     propia aplicacion ofrece (locked_out_user, problem_user,
+     performance_glitch_user), que son los que revelan defectos reales. Quedaron
+     fuera del alcance acordado para este ejercicio.
+  5. Validar los campos obligatorios del formulario de compra y los mensajes de
+     error ("Error: First Name is required").
+  6. Integrar la suite a un pipeline (GitHub Actions) publicando el reporte de
+     Serenity como artefacto de la ejecucion.
+  7. Cambiar a FOR_FAILURES y activar paralelismo de Cucumber cuando la suite
+     crezca.
+  8. Cubrir la descarga del PDF de la orden (Hallazgo 5).
+
+
+--------------------------------------------------------------------------------
+6. CONCLUSION
+--------------------------------------------------------------------------------
+
+El flujo de compra de SauceDemo funciona correctamente para el camino feliz con
+el usuario standard_user: la automatizacion lo recorre completo y obtiene la
+confirmacion del pedido de forma consistente y en pocos segundos.
+
+El hallazgo con mayor impacto practico no es un defecto de la aplicacion sino una
+trampa del enunciado: el texto "THANK YOU FOR YOUR ORDER" no existe asi en el
+DOM. Una automatizacion escrita al pie de la letra, sin inspeccionar el DOM real,
+habria reportado un falso negativo sobre una compra que si fue exitosa. Es un
+buen recordatorio de que la verificacion debe apuntar al comportamiento del
+sistema y no a la apariencia de la pantalla.
+
+El segundo aprendizaje es de testability: los identificadores derivados del
+nombre del producto obligan a construir localizadores mas defensivos. Resolverlo
+en la capa de Targets -y no esparcido por los step definitions- es precisamente
+lo que hace que el patron Screenplay valga la pena cuando la suite crece.
