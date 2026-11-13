@@ -1,0 +1,27 @@
+# ---- Build output ----
+target/
+build/
+out/
+
+# ---- Maven wrapper binario (se descarga solo con mvnw) ----
+.mvn/wrapper/maven-wrapper.jar
+
+# ---- IDE ----
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.project
+.classpath
+
+# ---- Logs y temporales ----
+*.log
+logs/
+tmp/
+
+# ---- Sistema operativo ----
+Thumbs.db
+Desktop.ini
+.DS_Store
