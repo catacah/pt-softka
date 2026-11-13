@@ -1,0 +1,33 @@
+EVIDENCIAS DE LA EJECUCION
+================================================================================
+
+Contenido de esta carpeta:
+
+  reporte-serenity.zip
+      Reporte HTML completo de Serenity BDD generado en la ejecucion verificada
+      del 13/11/2026 (1 escenario, 1 exitoso).
+
+      Para verlo:
+        1. Descomprimir el archivo.
+        2. Abrir "index.html" en cualquier navegador.
+           ("serenity-summary.html" es el mismo resultado en una sola pagina).
+
+      Va comprimido porque el reporte incluye ~1.600 archivos de recursos
+      (iconos SVG, hojas de estilo y librerias JS) que Serenity empaqueta con
+      cada reporte; en el repositorio ocuparian mucho ruido sin aportar nada
+      a la revision.
+
+  capturas/
+      Las 7 capturas clave del flujo, extraidas del reporte y renombradas para
+      que se puedan revisar directamente desde GitHub, sin descargar nada:
+
+        01-pagina-de-login.png
+        02-catalogo-tras-autenticarse.png
+        03-dos-productos-agregados-contador-2.png
+        04-carrito-con-los-dos-productos.png
+        05-formulario-de-compra.png
+        06-resumen-del-pedido-total-43-18.png
+        07-confirmacion-thank-you-for-your-order.png
+
+Para generar un reporte nuevo basta con ejecutar la prueba (ver readme.txt);
+queda en target/site/serenity/index.html.
