@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.qa.pruebas</groupId>
+    <artifactId>ejercicio-02-api-demoblaze</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+
+    <name>Ejercicio 02 - Pruebas REST signup y login Demoblaze</name>
+    <description>
+        Pruebas automatizadas de los servicios REST de registro y autenticacion de
+        https://api.demoblaze.com (signup y login) implementadas con Karate.
+    </description>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <maven.compiler.release>17</maven.compiler.release>
+
+        <!-- Versiones del stack de pruebas -->
+        <karate.version>1.5.2</karate.version>
+        <logback.version>1.5.20</logback.version>
+
+        <!-- Versiones de plugins -->
+        <maven.compiler.plugin.version>3.16.0</maven.compiler.plugin.version>
+        <maven.surefire.plugin.version>3.6.1</maven.surefire.plugin.version>
+
+        <!--
+            Parametros sobreescribibles desde la linea de comandos:
+              -Dkarate.tags="@CP01"      ejecuta solo los casos con esa etiqueta
+              -Dapi.base.url=...         apunta a otro ambiente / mock
+        -->
+        <karate.tags></karate.tags>
+        <api.base.url>https://api.demoblaze.com</api.base.url>
+    </properties>
+
+    <dependencies>
+        <!-- Karate: motor de pruebas de servicios REST + runner JUnit 5 -->
+        <dependency>
+            <groupId>io.karatelabs</groupId>
+            <artifactId>karate-junit5</artifactId>
+            <version>${karate.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Logging (Karate usa SLF4J) -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <!--
+            Karate recomienda dejar los .feature junto a las clases Java. Al declarar
+            testResources se pierde el valor por defecto, por eso se declaran los DOS
+            directorios: src/test/java (sin los .java) y src/test/resources.
+        -->
+        <testResources>
+            <testResource>
+                <directory>src/test/java</directory>
+                <excludes>
+                    <exclude>**/*.java</exclude>
+                </excludes>
+            </testResource>
+            <testResource>
+                <directory>src/test/resources</directory>
+            </testResource>
+        </testResources>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven.compiler.plugin.version}</version>
+            </plugin>
+
+            <!--
+                Las pruebas de servicios no necesitan navegador ni ambiente desplegado:
+                corren en la fase test con Surefire (a diferencia del ejercicio 01, que
+                usa Failsafe porque abre Chrome).
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven.surefire.plugin.version}</version>
+                <configuration>
+                    <includes>
+                        <include>**/*TestSuite.java</include>
+                    </includes>
+                    <argLine>-Dfile.encoding=UTF-8</argLine>
+                    <systemPropertyVariables>
+                        <karate.tags>${karate.tags}</karate.tags>
+                        <api.base.url>${api.base.url}</api.base.url>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
