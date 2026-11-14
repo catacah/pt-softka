@@ -1,0 +1,48 @@
+{
+  "caso": "CP02",
+  "descripcion": "Intentar crear un usuario ya existente",
+  "ejecutado": "2026-11-13 20:10:59",
+  "resultadoEsperado": "HTTP 200 y errorMessage 'This user already exist.'",
+  "observaciones": "El duplicado se rechaza con HTTP 200, no con 409 Conflict",
+  "entrada": {
+    "metodo": "POST",
+    "url": "https://api.demoblaze.com/signup",
+    "cabeceras": {
+      "Content-Type": "application/json"
+    },
+    "cuerpo": {
+      "username": "qa.nuevo.20261113.201055801",
+      "password": "UHJ1ZWJhLjIwMjY="
+    },
+    "passwordEnClaro": "Prueba.2026"
+  },
+  "salida": {
+    "statusHttp": 200,
+    "cabeceras": {
+      "content-type": [
+        "application/json"
+      ],
+      "vary": [
+        "Accept-Encoding"
+      ],
+      "x-cloud-trace-context": [
+        "5964d23ffde60648453953c9a1cddaf2"
+      ],
+      "date": [
+        "Sat, 14 Nov 2026 01:12:06 GMT"
+      ],
+      "server": [
+        "Google Frontend"
+      ],
+      "Transfer-Encoding": [
+        "chunked"
+      ],
+      "Set-Cookie": [
+      ]
+    },
+    "cuerpo": {
+      "errorMessage": "This user already exist."
+    },
+    "tiempoRespuestaMs": 328
+  }
+}

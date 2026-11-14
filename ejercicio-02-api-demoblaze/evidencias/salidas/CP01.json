@@ -1,0 +1,43 @@
+{
+  "caso": "CP01",
+  "descripcion": "Crear un nuevo usuario en signup",
+  "ejecutado": "2026-11-13 20:10:59",
+  "resultadoEsperado": "HTTP 200 y cuerpo sin errorMessage: el usuario queda creado",
+  "observaciones": "El servicio no devuelve 201 ni representacion del usuario creado",
+  "entrada": {
+    "metodo": "POST",
+    "url": "https://api.demoblaze.com/signup",
+    "cabeceras": {
+      "Content-Type": "application/json"
+    },
+    "cuerpo": {
+      "username": "qa.nuevo.20261113.201055801",
+      "password": "UHJ1ZWJhLjIwMjY="
+    },
+    "passwordEnClaro": "Prueba.2026"
+  },
+  "salida": {
+    "statusHttp": 200,
+    "cabeceras": {
+      "content-type": [
+        "application/json"
+      ],
+      "x-cloud-trace-context": [
+        "97c03bfcd7bdfc11ff646a0f03fac726"
+      ],
+      "date": [
+        "Sat, 14 Nov 2026 01:12:06 GMT"
+      ],
+      "server": [
+        "Google Frontend"
+      ],
+      "Content-Length": [
+        "3"
+      ],
+      "Set-Cookie": [
+      ]
+    },
+    "cuerpo": "\"\"",
+    "tiempoRespuestaMs": 404
+  }
+}

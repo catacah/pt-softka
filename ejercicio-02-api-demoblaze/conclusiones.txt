@@ -1,0 +1,383 @@
+================================================================================
+ EJERCICIO 2 - HALLAZGOS Y CONCLUSIONES
+ Pruebas de los servicios REST de signup y login de Demoblaze
+================================================================================
+
+Fecha de ejecucion : 13/11/2026
+Ambiente           : Windows 11 / Oracle JDK 25.0.2
+Stack              : Karate 1.5.2 (JUnit 5) + Maven Wrapper 3.9.16
+Servicios          : POST https://api.demoblaze.com/signup
+                     POST https://api.demoblaze.com/login
+Resultado          : 4 casos ejecutados, 4 exitosos, 0 fallidos
+Duracion           : 11,8 s el build completo / 5,4 s la suite
+Tiempos de respuesta de los servicios: entre 328 ms y 421 ms
+Evidencia          : evidencias/salidas/CP01..CP04.json (entrada y salida por caso)
+                     evidencias/salidas/consola-ejecucion.txt (traza HTTP completa)
+                     evidencias/reporte-karate.zip (reporte HTML)
+
+Usuarios de la ejecucion de referencia:
+  qa.nuevo.20261113.201055801   (lo crea CP01 y lo repite CP02)
+  qa.login.20261113.201055802   (se registra como dato de prueba para CP03 y CP04)
+
+
+--------------------------------------------------------------------------------
+1. MATRIZ DE ENTRADAS Y SALIDAS (lo observado, no lo supuesto)
+--------------------------------------------------------------------------------
+
+Todas las peticiones son POST con cabecera Content-Type: application/json y
+cuerpo { "username": "<texto>", "password": "<password en Base64>" }.
+El password usado es "Prueba.2026", que viaja como "UHJ1ZWJhLjIwMjY=".
+
+CP01 - Crear un nuevo usuario en signup
+  ENTRADA  POST /signup
+           {"username":"qa.nuevo.20261113.201055801","password":"UHJ1ZWJhLjIwMjY="}
+  SALIDA   HTTP 200 - content-type: application/json - 404 ms
+           Cuerpo: ""            (cadena JSON vacia; sin errorMessage)
+  LECTURA  El usuario queda creado. El exito solo se puede deducir por la
+           AUSENCIA de errorMessage.
+
+CP02 - Intentar crear un usuario que ya existe
+  ENTRADA  POST /signup  (el mismo usuario de CP01)
+           {"username":"qa.nuevo.20261113.201055801","password":"UHJ1ZWJhLjIwMjY="}
+  SALIDA   HTTP 200 - content-type: application/json - 328 ms
+           Cuerpo: {"errorMessage":"This user already exist."}
+  LECTURA  El duplicado se rechaza correctamente, pero con codigo 200.
+
+CP03 - Usuario y password correctos en login
+  ENTRADA  POST /login
+           {"username":"qa.login.20261113.201055802","password":"UHJ1ZWJhLjIwMjY="}
+  SALIDA   HTTP 200 - content-type: application/json - 421 ms
+           Cuerpo: "Auth_token: cWEubG9naW4uMjAyNjExMTMuMjAxMDU1ODAyMTc5NTIxOA=="
+  LECTURA  Autenticacion exitosa. El cuerpo es una cadena, no un objeto JSON.
+
+CP04 - Usuario correcto y password incorrecto en login
+  ENTRADA  POST /login
+           {"username":"qa.login.20261113.201055802",
+            "password":"UGFzc3dvcmRJbmNvcnJlY3RvLjk5OQ=="}   ("PasswordIncorrecto.999")
+  SALIDA   HTTP 200 - content-type: application/json - 384 ms
+           Cuerpo: {"errorMessage":"Wrong password."}
+  LECTURA  Las credenciales invalidas se rechazan y no se entrega ningun token.
+
+Los cuatro servicios se comportaron de forma funcionalmente correcta: se crea el
+usuario, se detecta el duplicado, se autentica con la credencial correcta y se
+rechaza la incorrecta. Los hallazgos de la seccion 2 son de contrato, de
+seguridad y de diseno del servicio, no fallas de la funcionalidad probada.
+
+
+--------------------------------------------------------------------------------
+2. HALLAZGOS
+--------------------------------------------------------------------------------
+
+HALLAZGO 1 - Todas las respuestas usan HTTP 200, incluso los errores
+Severidad: media-alta (contrato)
+--------------------------------------------------------------------------------
+Los dos casos de error (usuario duplicado y password incorrecto) responden
+HTTP 200 con el error dentro del cuerpo, en la propiedad "errorMessage".
+
+Consecuencias:
+  a) Cualquier consumidor que se base en el codigo HTTP -un gateway, un
+     monitor de disponibilidad, una libreria cliente, un retry automatico-
+     interpretara como exitoso un registro rechazado o un login fallido.
+  b) Las metricas de error del servicio quedan planas: nunca hay 4xx.
+  c) En pruebas obliga a aseverar sobre el cuerpo y no sobre el status, que es
+     exactamente lo que hacen CP02 y CP04.
+
+Esperado segun convenciones REST: 409 Conflict para el usuario duplicado y 401
+Unauthorized para credenciales invalidas.
+Verificado en: evidencias/salidas/CP02.json, CP04.json
+
+
+HALLAZGO 2 - El token de sesion no esta firmado: es Base64 reversible del usuario
+Severidad: alta (seguridad)
+--------------------------------------------------------------------------------
+El login devuelve "Auth_token: <token>". Al decodificar el token de la ejecucion
+de referencia (Base64) se obtiene:
+
+      cWEubG9naW4uMjAyNjExMTMuMjAxMDU1ODAyMTc5NTIxOA==
+        ->  qa.login.20261113.2010558021795218
+            |__________ usuario __________||_ 1795218 _|
+
+Es decir: el "token" es la concatenacion del nombre de usuario y un numero de
+expiracion, codificada en Base64. No tiene firma ni parte secreta: cualquiera
+que conozca el nombre de un usuario puede construir el mismo valor con una
+operacion de una linea. El servicio POST /check acepta ese valor y responde con
+el usuario asociado.
+
+Nota de alcance: esto se comprobo unicamente con el token del usuario de prueba
+creado por esta suite; no se intento construir ni usar el token de ningun otro
+usuario.
+
+Recomendacion: emitir un token firmado (por ejemplo JWT con HS256/RS256 y clave
+en el servidor), con expiracion verificable, y rechazar cualquier token cuya
+firma no valide.
+Verificado en: evidencias/salidas/CP03.json (campo "observaciones")
+
+
+HALLAZGO 3 - El password viaja codificado en Base64, no cifrado ni hasheado
+Severidad: media (seguridad)
+--------------------------------------------------------------------------------
+La aplicacion no envia el password en claro: lo codifica en Base64 con la
+funcion b64EncodeUnicode() de https://www.demoblaze.com/js/index.js. Base64 no
+es cifrado: es una representacion reversible sin clave.
+
+Implicaciones:
+  - No aporta confidencialidad; la proteccion real del canal la da HTTPS.
+  - Puede dar una falsa sensacion de seguridad en una revision superficial.
+  - Si el backend almacena lo recibido tal cual, el password queda guardado de
+     forma trivialmente reversible (no verificable desde fuera, pero es el
+     riesgo que se desprende del diseno observado).
+
+Recomendacion: enviar el password en claro sobre HTTPS y aplicar en el servidor
+una funcion de derivacion con sal (bcrypt, scrypt o Argon2).
+
+
+HALLAZGO 4 - Las respuestas exitosas no son objetos JSON, sino escalares
+Severidad: media (contrato / interoperabilidad)
+--------------------------------------------------------------------------------
+Con content-type: application/json, el servicio responde:
+  - signup exitoso: ""                        (cadena vacia)
+  - login exitoso : "Auth_token: <token>"     (cadena con prefijo)
+
+Ambos son JSON validos, pero escalares, no objetos. Efectos reales observados:
+  a) Muchos clientes HTTP -Karate incluido- solo deserializan automaticamente
+     cuerpos que empiezan por "{" o "[", asi que estas respuestas llegan como
+     texto crudo, con las comillas incluidas. Las aserciones de CP01 y CP03
+     tuvieron que escribirse sobre texto, no sobre un objeto.
+  b) El consumidor debe recortar el prefijo "Auth_token: " con manipulacion de
+     cadenas; es exactamente lo que hace el front (data.replace("Auth_token: ",
+     "")). Cualquier cambio de ese literal rompe a todos los consumidores.
+
+Recomendacion: devolver objetos, por ejemplo {"token":"..."} y
+{"username":"...","creado":true}, y dejar el texto libre fuera del contrato.
+
+
+HALLAZGO 5 - El registro exitoso no devuelve 201 ni representacion del recurso
+Severidad: baja-media (contrato)
+--------------------------------------------------------------------------------
+Crear un usuario responde 200 con cuerpo "" y sin cabecera Location. El cliente
+no recibe ninguna confirmacion positiva: debe inferir el exito por la ausencia
+de errorMessage, un contrato fragil (si manana el servicio devolviera otra
+propiedad informativa, el cliente lo seguiria leyendo como exito).
+
+Recomendacion: 201 Created, cabecera Location y un cuerpo con el recurso creado.
+
+
+HALLAZGO 6 - Los mensajes de error permiten enumerar usuarios
+Severidad: media (seguridad)
+--------------------------------------------------------------------------------
+El login distingue explicitamente los dos motivos de rechazo:
+      {"errorMessage":"Wrong password."}        -> el usuario SI existe
+      {"errorMessage":"User does not exist."}   -> el usuario NO existe
+
+El segundo mensaje se observo durante la construccion de la suite, al enviar un
+login contra un usuario no registrado (el front lo contempla igualmente en
+js/index.js). Con esos dos mensajes, un tercero puede averiguar si un nombre de
+usuario esta registrado, lo que facilita ataques dirigidos de credenciales.
+
+Recomendacion: un unico mensaje generico ("Usuario o contrasena incorrectos")
+con HTTP 401, sin revelar cual de los dos datos fallo.
+
+
+HALLAZGO 7 - No existe forma de eliminar los usuarios creados
+Severidad: media (testability)
+--------------------------------------------------------------------------------
+La API publica (signup, login, check) no expone ninguna operacion de borrado ni
+de consulta de usuarios. Consecuencias para las pruebas:
+  - No hay limpieza posible: cada ejecucion deja datos permanentes en un
+    ambiente publico compartido (esta suite deja 2 usuarios por ejecucion).
+  - El caso "crear un nuevo usuario" no es repetible con un nombre fijo: solo
+    pasaria la primera vez.
+
+Como se resolvio: los nombres de usuario se generan con marca de tiempo al
+milisegundo (qa.nuevo.<ts> y qa.login.<ts>), de modo que la suite es
+re-ejecutable tantas veces como se quiera sin colisiones ni limpieza.
+
+Recomendacion al equipo de desarrollo: exponer un endpoint de borrado (o un
+ambiente de pruebas reiniciable) para que las suites puedan dejar el ambiente
+como lo encontraron.
+
+
+HALLAZGO 8 - No se observan cabeceras de seguridad en las respuestas
+Severidad: baja
+--------------------------------------------------------------------------------
+Las cabeceras capturadas en los cuatro casos son unicamente: content-type,
+vary, x-cloud-trace-context, date, server y Transfer-Encoding / Content-Length.
+No aparecen Strict-Transport-Security, X-Content-Type-Options, Cache-Control ni
+cabeceras CORS explicitas.
+
+Recomendacion: agregar HSTS y X-Content-Type-Options: nosniff, y declarar
+Cache-Control: no-store en las respuestas de autenticacion.
+Verificado en: cualquiera de los archivos de evidencias/salidas/
+
+
+HALLAZGO 9 - Verificaciones positivas
+Severidad: ninguna
+--------------------------------------------------------------------------------
+  [OK] El registro es consistente: el mismo usuario no se crea dos veces y el
+       segundo intento se rechaza con un mensaje claro.
+  [OK] La credencial correcta autentica y entrega token; la incorrecta no
+       entrega ningun token (CP04 verifica el cuerpo completo con comparacion
+       estricta, no solo el mensaje).
+  [OK] El token emitido corresponde al usuario que se autentico (se verifica
+       dentro de CP03 decodificandolo).
+  [OK] Tiempos de respuesta estables entre 328 ms y 421 ms en los cuatro casos.
+
+
+HALLAZGO 10 - Aprendizaje tecnico de la herramienta (karate-config.js)
+Severidad: ninguna (nota de implementacion)
+--------------------------------------------------------------------------------
+karate-config.js se evalua UNA VEZ POR ESCENARIO, no una vez por ejecucion. La
+primera version de la suite generaba el nombre de usuario ahi, lo que producia
+un usuario distinto en cada caso: CP02 creaba un usuario nuevo en lugar de
+chocar con el duplicado, y CP03/CP04 intentaban autenticarse contra usuarios
+que nunca se habian registrado (de ahi salio, de hecho, el Hallazgo 6).
+
+Se resolvio moviendo la generacion de datos a fixtures/datos-de-prueba.js e
+invocandolo con karate.callSingle(), que si se ejecuta una sola vez por
+ejecucion. Queda documentado porque es un error facil de cometer y dificil de
+diagnosticar: la suite "casi" funciona.
+
+
+--------------------------------------------------------------------------------
+3. DECISIONES DE DISENIO DE LA AUTOMATIZACION
+--------------------------------------------------------------------------------
+
+[1] Karate 1.5.2 (io.karatelabs:karate-junit5)
+    Es la herramienta deseable del enunciado y la linea estable de Karate. No se
+    uso Karate 2.x (karate-core 2.1.4 / karate-junit6) porque su propio README
+    aun publica las coordenadas Maven como "coming soon" y exige Java 21+: para
+    un entregable que debe ser reproducible por un tercero pesa mas la
+    documentacion estable que la version mas reciente.
+
+[2] Dos usuarios por ejecucion, con roles separados
+    usuarioNuevo (CP01 y CP02) y usuarioRegistrado (CP03 y CP04). Asi ningun
+    caso depende del orden en que Karate recorra los features: el feature de
+    login registra su propio usuario con callonce y el de signup conserva la
+    cadena crear -> reintentar que pide el enunciado.
+
+[3] Datos de prueba unicos y generados una sola vez
+    fixtures/datos-de-prueba.js + karate.callSingle(). Ver Hallazgo 7 y 10.
+
+[4] Fixtures separados de los casos y marcados con @ignore
+    Lo que no es un caso de prueba (preparar datos, escribir evidencia) vive en
+    fixtures/ y no se ejecuta por su cuenta: el reporte muestra exactamente
+    cuatro casos, ni uno mas.
+
+[5] Captura explicita de entradas y salidas, ademas del reporte
+    El enunciado pide identificar las entradas y capturar las salidas, asi que
+    cada caso escribe su propio JSON (target/evidencias/CPxx.json) con metodo,
+    URL, cabeceras, cuerpo enviado, status, cabeceras de respuesta, cuerpo
+    recibido y tiempo de respuesta. Son archivos pequenos y legibles
+    directamente en GitHub, sin descargar ni descomprimir nada.
+
+[6] Aserciones estrictas sobre el cuerpo completo
+    En CP02 y CP04 se usa "match response == { errorMessage: '...' }", que en
+    Karate es una comparacion estricta: verifica tambien que no haya ninguna
+    otra propiedad (por ejemplo, que un login rechazado no traiga token).
+
+[7] Pruebas en la fase test, sin navegador
+    Son pruebas de servicios: corren con Surefire en la fase test y el build
+    completo tarda ~12 s. (El ejercicio 01, que abre Chrome, usa Failsafe en
+    integration-test para no disparar un navegador en un "mvn test").
+
+[8] Ejecucion secuencial con un solo hilo
+    Son cuatro casos y dos de ellos son una cadena intencional. El determinismo
+    y la legibilidad del reporte valen mas que el paralelismo.
+
+[9] URL base parametrizable (-Dapi.base.url)
+    Permite apuntar la misma suite a un mock o a otro ambiente sin tocar codigo.
+
+[10] Casos redactados en espaniol
+     Titulos, pasos, variables y comentarios en espaniol. Karate no soporta
+     dialectos de Gherkin (no existe "# language: es"), asi que las palabras
+     clave estructurales quedan en ingles; se usa el paso universal "*" para que
+     las frases se lean en espaniol. Es una limitacion de la herramienta, no una
+     decision: con Cucumber (ejercicio 01) el Gherkin si esta 100% en espaniol.
+
+
+--------------------------------------------------------------------------------
+4. RIESGOS IDENTIFICADOS
+--------------------------------------------------------------------------------
+
+[R1] Dependencia de un servicio publico de terceros
+     api.demoblaze.com no tiene SLA ni versionado. Si cambia un mensaje de error
+     o se cae, la suite falla sin que haya un defecto propio.
+     Mitigacion: URL base parametrizable (ya implementado) y, en un proyecto
+     real, un mock o un ambiente propio para la regresion diaria.
+
+[R2] Acoplamiento a los mensajes de error en ingles
+     Las aserciones comparan literales ("This user already exist.", "Wrong
+     password."). Es deliberado -son el contrato observable del servicio- pero
+     cualquier correccion de esos textos (incluida la falta de concordancia
+     gramatical del primero) rompera las pruebas.
+     Mitigacion sugerida al equipo de desarrollo: exponer un codigo de error
+     estable ademas del mensaje legible.
+
+[R3] Datos de prueba acumulativos
+     Ver Hallazgo 7: cada ejecucion deja dos usuarios que no se pueden borrar.
+
+[R4] Motor de JavaScript de Karate sobre JDK recientes
+     Karate 1.5.2 usa GraalVM JS 24, que sobre JDK 25 emite advertencias de
+     sun.misc.Unsafe. No afecta el resultado (4/4 exitosos), pero es deuda a
+     vigilar: desaparece con JDK 17/21 o migrando a Karate 2.x.
+
+[R5] Sin control de intentos observado
+     No se realizo ninguna prueba de carga ni de fuerza bruta (esta fuera del
+     alcance y seria abusivo contra un servicio de terceros), pero en los
+     reintentos legitimos de la suite nunca se observo un 429 ni bloqueo
+     temporal. Combinado con el Hallazgo 6, es un riesgo a verificar en un
+     producto real.
+
+
+--------------------------------------------------------------------------------
+5. RECOMENDACIONES Y SIGUIENTES PASOS
+--------------------------------------------------------------------------------
+
+Sobre el producto (API de Demoblaze)
+  1. Usar codigos HTTP acordes: 201 en el registro, 409 en el duplicado, 401 en
+     credenciales invalidas (Hallazgos 1 y 5).
+  2. Firmar el token y verificar su firma; dejar de usar Base64 del usuario
+     (Hallazgo 2).
+  3. Unificar el mensaje de credenciales invalidas para no permitir enumeracion
+     de usuarios (Hallazgo 6).
+  4. Devolver objetos JSON en las respuestas exitosas (Hallazgo 4).
+  5. Hashear el password con sal en el servidor (Hallazgo 3) y agregar las
+     cabeceras de seguridad basicas (Hallazgo 8).
+  6. Exponer un endpoint de borrado o un ambiente reiniciable para pruebas
+     (Hallazgo 7).
+
+Sobre la automatizacion (fuera del alcance acordado para este ejercicio)
+  7. Validar el token obtenido contra POST /check como paso adicional del flujo.
+  8. Casos negativos adicionales: usuario inexistente, campos vacios, password
+     sin codificar, usuario con espacios o caracteres especiales, cuerpo
+     malformado y Content-Type incorrecto.
+  9. Validacion de contrato/esquema con "match response == { ... }" sobre un
+     esquema reutilizable, y asercion de tiempos (responseTime < umbral).
+ 10. Integrar la suite a un pipeline (GitHub Actions) publicando
+     target/karate-reports como artefacto de cada ejecucion.
+
+
+--------------------------------------------------------------------------------
+6. CONCLUSION
+--------------------------------------------------------------------------------
+
+Los dos servicios cumplen su funcion: el registro crea el usuario y detecta el
+duplicado, y el login autentica con la credencial correcta y rechaza la
+incorrecta. Los cuatro casos del enunciado pasan de forma consistente y en menos
+de medio segundo por peticion.
+
+Lo relevante del ejercicio no esta en si los casos pasan, sino en lo que se ve
+al mirar las salidas: los errores llegan con HTTP 200, el "Auth_token" no es un
+token sino el nombre del usuario en Base64, el exito de un registro se infiere
+por la ausencia de un mensaje de error y los mensajes de login revelan si un
+usuario existe. Son cuatro decisiones de diseno que una prueba que solo
+verificara "el servicio responde 200" habria dejado pasar sin una sola alarma;
+por eso cada caso asevera sobre el cuerpo de la respuesta y guarda su propia
+evidencia.
+
+El segundo aprendizaje es de automatizacion: en Karate, karate-config.js se
+evalua por escenario, no por ejecucion. Ese detalle hizo que la primera version
+de la suite pasara "casi" bien mientras probaba, en realidad, algo distinto de
+lo que decia probar (Hallazgo 10). Buscar por que CP02 no veia el duplicado fue
+lo que puso a la vista el mensaje "User does not exist." y, con el, el hallazgo
+de enumeracion de usuarios.
