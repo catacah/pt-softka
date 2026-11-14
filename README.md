@@ -9,22 +9,31 @@ propias instrucciones, dependencias, scripts y evidencias.
 | # | Ejercicio | Alcance | Stack | Estado |
 |---|-----------|---------|-------|--------|
 | 01 | [E2E compra en SauceDemo](ejercicio-01-e2e-saucedemo/) | Prueba funcional automatizada del flujo de compra en `saucedemo.com`: login, dos productos al carrito, carrito, formulario y confirmación del pedido | Serenity BDD 5.4.2 + Cucumber 8 + Screenplay (Java 17) | ✅ 1 escenario / 1 exitoso |
+| 02 | [Servicios REST de Demoblaze](ejercicio-02-api-demoblaze/) | Pruebas de los servicios `POST /signup` y `POST /login` de `api.demoblaze.com`: crear usuario, usuario duplicado, login correcto y login incorrecto, con las entradas y salidas capturadas | Karate 1.5.2 + JUnit 5 (Java 17) | ✅ 4 casos / 4 exitosos |
 
 ## Cómo ejecutar
 
-Cada ejercicio se ejecuta desde su propia carpeta. Para el ejercicio 01:
+Cada ejercicio se ejecuta desde su propia carpeta:
 
 ```bash
+# Ejercicio 01 - E2E con navegador
 cd ejercicio-01-e2e-saucedemo
 ./mvnw clean verify            # Linux / macOS / Git Bash
 .\mvnw.cmd clean verify        # Windows
+
+# Ejercicio 02 - Servicios REST
+cd ejercicio-02-api-demoblaze
+./mvnw clean test              # Linux / macOS / Git Bash
+.\mvnw.cmd clean test          # Windows
 ```
 
-No hace falta tener Maven instalado: el proyecto incluye **Maven Wrapper**.
-Solo se requiere **JDK 17+** y **Google Chrome**.
+No hace falta tener Maven instalado: cada proyecto incluye **Maven Wrapper**.
+Solo se requiere **JDK 17+** (y **Google Chrome** únicamente para el ejercicio 01).
 
 Instrucciones detalladas paso a paso, opciones de ejecución y solución de
-problemas en [`ejercicio-01-e2e-saucedemo/readme.txt`](ejercicio-01-e2e-saucedemo/readme.txt).
+problemas en el `readme.txt` de cada ejercicio:
+[ejercicio 01](ejercicio-01-e2e-saucedemo/readme.txt) ·
+[ejercicio 02](ejercicio-02-api-demoblaze/readme.txt).
 
 ## Cómo está organizado el trabajo
 
@@ -40,6 +49,16 @@ ejercicio:
 
 Las ramas de `feature` se integran con *merge* sin *fast-forward*, así el
 historial muestra claramente dónde empieza y dónde termina cada ejercicio.
+Se dejan publicadas a propósito, para que se pueda revisar el desarrollo rama
+por rama; en un proyecto de equipo se borran después de integrarlas.
+
+Para ver el avance de un ejercicio:
+
+```bash
+git log --oneline --graph --all          # el mapa completo
+git log --oneline feature/ejercicio-02-api-demoblaze   # los pasos de un ejercicio
+git tag -n                               # las entregas
+```
 
 ## Entregables por ejercicio
 
@@ -47,6 +66,6 @@ historial muestra claramente dónde empieza y dónde termina cada ejercicio.
 |---------|-----------|
 | `readme.txt` | Instrucciones paso a paso de ejecución |
 | `conclusiones.txt` | Hallazgos y conclusiones del ejercicio |
-| `evidencias/reporte-serenity.zip` | Reporte HTML de la ejecución verificada (descomprimir y abrir `index.html`) |
-| `evidencias/capturas/` | Capturas clave del flujo, renombradas |
+| `evidencias/reporte-*.zip` | Reporte HTML de la ejecución verificada (descomprimir y abrir la página principal) |
+| `evidencias/capturas/` o `evidencias/salidas/` | Evidencia revisable directamente desde GitHub: capturas del flujo (ej. 01) o entradas y salidas capturadas por caso (ej. 02) |
 | `scripts/` | Scripts de ejecución para Windows y Linux/macOS |
