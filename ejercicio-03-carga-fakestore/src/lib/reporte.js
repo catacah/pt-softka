@@ -275,6 +275,20 @@ function reporteDeTexto(datos, contexto, resultado) {
   salida.push('');
 
   salida.push(linea('-'));
+  salida.push(' GENERADOR DE CARGA');
+  salida.push(linea('-'));
+  salida.push('');
+  salida.push(' Iteraciones completadas ...................... ' + entero(valorDe(datos, 'iterations', 'count')));
+  salida.push(' Iteraciones descartadas ...................... ' + entero(resultado.descartadas));
+  salida.push(' VUs en el pico ............................... ' + entero(valorDe(datos, 'vus', 'max')));
+  salida.push(' VUs pre-asignados / techo .................... ' + entero(valorDe(datos, 'vus_max', 'max')));
+  salida.push('');
+  salida.push(' Una iteracion descartada significa que k6 no pudo lanzar una peticion en el');
+  salida.push(' momento que le correspondia: el TPS real seria menor que el configurado y la');
+  salida.push(' medicion no representaria el escenario pedido.');
+  salida.push('');
+
+  salida.push(linea('-'));
   salida.push(' VALIDACIONES POR PETICION');
   salida.push(linea('-'));
   salida.push('');
@@ -516,6 +530,8 @@ function reporteHtml(datos, contexto, resultado) {
     '      <div><dt>p95</dt><dd>' + ms(resultado.p95) + '</dd></div>',
     '      <div><dt>Tasa de error</dt><dd>' + porcentaje(resultado.tasaError) + '</dd></div>',
     '      <div><dt>Duración</dt><dd>' + num(resultado.duracionSegundos, 1) + ' s</dd></div>',
+    '      <div><dt>VUs en el pico</dt><dd>' + entero(valorDe(datos, 'vus', 'max')) + '</dd></div>',
+    '      <div><dt>Iteraciones descartadas</dt><dd>' + entero(resultado.descartadas) + '</dd></div>',
     '      <div><dt>Ejecutado</dt><dd>' + fechaLegible(new Date()) + '</dd></div>',
     '    </dl>',
     '  </header>',

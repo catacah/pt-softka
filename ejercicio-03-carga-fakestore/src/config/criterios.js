@@ -29,8 +29,19 @@ export const tpsMinimoAceptado = criterios.tpsObjetivo - criterios.toleranciaTps
 
 export const perfil = {
   duracionMeseta: texto('DURACION', '3m'),
-  vusPreasignados: numero('VUS_PREASIGNADOS', 30),
-  vusMaximos: numero('VUS_MAXIMOS', 100),
+
+  // Dimensionado del generador de carga, por la ley de Little:
+  //     VUs necesarios = TPS x tiempo de respuesta
+  // Con 20 TPS y el umbral de 1,5 s bastarian 30 VUs, pero el generador tiene
+  // que aguantar el PEOR tiempo de respuesta, no el esperado: en la primera
+  // corrida de esta prueba el servicio se detuvo un segundo entero y la
+  // concurrencia salto a 42 VUs. Los VUs que no estan pre-asignados se
+  // inicializan sobre la marcha, y mientras eso pasa k6 descarta iteraciones
+  // (17 descartadas en esa corrida), con lo cual el TPS real deja de ser el
+  // configurado y la medicion no sirve. Se pre-asignan 100 (20 TPS x 5 s de
+  // peor caso observado) y se deja techo hasta 200.
+  vusPreasignados: numero('VUS_PREASIGNADOS', 100),
+  vusMaximos: numero('VUS_MAXIMOS', 200),
 };
 
 /**
