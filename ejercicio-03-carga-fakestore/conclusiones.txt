@@ -1,0 +1,516 @@
+================================================================================
+ EJERCICIO 3 - HALLAZGOS Y CONCLUSIONES
+ Prueba de carga del servicio de login de FakeStoreAPI
+================================================================================
+
+Fecha de ejecucion : 14/11/2026
+Ambiente           : Windows 11 Home 10.0.26300, red domestica, k6 v2.4.0
+Servicio           : POST https://fakestoreapi.com/auth/login
+                     (Express detras de Cloudflare, nodo CF de Miami)
+Escenario          : 20 peticiones/s durante 3 minutos (constant-arrival-rate)
+Datos de entrada   : 5 credenciales parametrizadas desde datos/usuarios.csv
+Resultado          : los 3 criterios del enunciado se cumplen (k6 salio con 0)
+Evidencia          : evidencias/resumen.txt y resumen.json (metricas)
+                     evidencias/reporte-carga-login.html (reporte)
+                     evidencias/consola-ejecucion.txt (ejecucion completa)
+                     evidencias/metricas-por-peticion.csv.gz (75.984 mediciones)
+
+
+--------------------------------------------------------------------------------
+1. RESULTADO DE LA PRUEBA (lo medido, no lo supuesto)
+--------------------------------------------------------------------------------
+
+  Peticiones lanzadas ............ 3.601
+  Peticiones fallidas ............ 0
+  Iteraciones descartadas ........ 0
+  Duracion ....................... 180,5 s
+  VUs en el pico ................. 18 (de 100 pre-asignados)
+
+  TIEMPOS DE RESPUESTA (ms)
+      min       avg       med       p(90)     p(95)     p(99)     max
+      318       398       382       447       483       751       1.237
+
+  CRITERIO 1 - Alcanzar al menos 20 TPS .............................. CUMPLE
+      Medido: 19,95 TPS (3.601 peticiones / 180,5 s), 0 descartadas.
+      El 19,95 en lugar de 20,00 es aritmetica de la medicion, no una falta de
+      ritmo: la metrica divide por la duracion total de la ejecucion, que
+      incluye la fraccion de segundo en la que se cierra la ultima iteracion.
+      Peticiones por segundo observadas en el csv crudo: entre 7 y 32, con
+      media de 20 y solo dos segundos por debajo de 15 (ver hallazgo 5).
+
+  CRITERIO 2 - Tiempo de respuesta maximo 1,5 s ...................... CUMPLE
+      p95 483 ms, p99 751 ms y maximo absoluto 1.237 ms: NINGUNA de las 3.601
+      peticiones supero 1,5 s. Solo 14 peticiones (0,39 %) pasaron de 1 s.
+      El criterio se cumple incluso en su lectura mas estricta (el maximo), no
+      solo en percentiles.
+
+  CRITERIO 3 - Tasa de error menor al 3 % .............................CUMPLE
+      0,00 % (0 de 3.601). Las 3.601 respuestas fueron HTTP 201 con un token
+      JWT bien formado: no hubo un solo 4xx, 5xx, timeout ni token vacio.
+
+  Conclusion operativa: a 20 TPS sostenidos el servicio de login cumple con
+  holgura los tres criterios. El margen contra el umbral de 1,5 s es de 3,1x
+  en el p95 y de 1,2x en el peor caso. El limite de capacidad no se busco: el
+  enunciado pide 20 TPS y es lo que se midio.
+
+
+--------------------------------------------------------------------------------
+2. HALLAZGOS
+--------------------------------------------------------------------------------
+
+HALLAZGO 1 - El login exitoso responde 201 Created, no 200
+Severidad: media (contrato)
+--------------------------------------------------------------------------------
+Un login correcto devuelve HTTP 201 Created con {"token":"<JWT>"}. 201 significa
+"se creo un recurso y su identificador va en Location"; aqui no se crea ningun
+recurso direccionable ni viene cabecera Location. El codigo que corresponde a
+una autenticacion es 200 OK.
+
+Por que importa en una prueba de carga, y no es un detalle de estilo:
+
+  a) Una validacion escrita "de memoria" (status === 200) habria marcado como
+     fallidas las 3.601 peticiones y la prueba habria reportado 100 % de error
+     con el servicio funcionando perfecto.
+  b) Al reves es peor: k6 considera "respuesta esperada" cualquier 2xx-3xx por
+     defecto, asi que sin declarar nada la tasa de error habria dado 0 % igual,
+     pero tambien habria dado 0 % si el servicio empezara a responder 204 sin
+     cuerpo. Por eso el script declara explicitamente
+     responseCallback: http.expectedStatuses(201) y, ademas, valida que el
+     token exista y tenga las tres partes de un JWT.
+
+Verificado en: evidencias/resumen.json (metrica login_exitoso = 100 %) y en el
+check "el login responde HTTP 201 Created" (3.601/3.601).
+
+
+HALLAZGO 2 - El error de credenciales no es JSON: es texto plano
+Severidad: media (contrato)
+--------------------------------------------------------------------------------
+Con una credencial invalida el servicio responde:
+
+    HTTP/1.1 401 Unauthorized
+    username or password is incorrect          <- texto plano, sin JSON
+
+El codigo 401 es correcto, pero el cuerpo no respeta el contrato del endpoint
+(el camino exitoso si devuelve JSON). Consecuencia concreta: en el cliente,
+response.json() lanza una excepcion al intentar parsear ese texto.
+
+En una prueba de carga eso no es cosmetico: una excepcion no capturada ABORTA la
+iteracion, con lo cual la peticion siguiente no se lanza y el TPS real baja sin
+que el reporte lo explique. El script extrae el token dentro de un try/catch
+justamente por esto (src/lib/validaciones.js, funcion extraerToken), de modo que
+una respuesta de error se cuenta como error y la prueba sigue su ritmo.
+
+Recomendacion: devolver siempre JSON, por ejemplo
+{"error":"credenciales_invalidas","mensaje":"Usuario o contrasena incorrectos"},
+con un codigo de error estable que el cliente pueda interpretar sin depender del
+texto en ingles.
+
+
+HALLAZGO 3 - El JWT no expira y es identico para todos los logins del
+             mismo usuario en el mismo segundo
+Severidad: alta (seguridad)
+--------------------------------------------------------------------------------
+El token emitido es un JWT HS256 cuyo payload completo es:
+
+    {"alg":"HS256","typ":"JWT"}            <- cabecera
+    {"sub":1,"user":"johnd","iat":1794673853}   <- payload
+
+Dos cosas, las dos verificadas:
+
+  a) NO hay claim "exp". El token no tiene fecha de vencimiento: una vez
+     emitido sirve para siempre, salvo que el servidor rote la clave de firma.
+     Un token filtrado (logs, historial de un navegador, una captura) no deja
+     de ser valido nunca.
+
+  b) El token es una funcion pura de (usuario, segundo). Se lanzaron 6 logins
+     simultaneos del mismo usuario: 5 cayeron en el mismo segundo y devolvieron
+     el MISMO token, caracter por caracter; el sexto cayo en el segundo
+     siguiente y devolvio otro. No hay "jti", ni nonce, ni identificador de
+     sesion.
+
+     Implicacion: no existe el concepto de sesion. No se puede revocar el acceso
+     de un dispositivo sin invalidar a todos, no se puede auditar "cuantas
+     sesiones activas tiene este usuario", y dos clientes distintos comparten
+     literalmente la misma credencial de acceso.
+
+Ademas, "sub" es un entero secuencial corto (johnd=1, mor_2314=2, donero=4,
+derek=5), lo que facilita enumerar usuarios por identificador.
+
+Nota de alcance: esto se comprobo unicamente con las credenciales de prueba que
+el propio enunciado entrega, decodificando tokens emitidos a esas credenciales.
+No se intento falsificar ninguna firma ni acceder a datos de otro usuario.
+
+Recomendacion: agregar "exp" (y preferiblemente "jti" y "nbf"), emitir un token
+distinto por sesion y habilitar revocacion.
+
+
+HALLAZGO 4 - No se observo limitacion de tasa en 3.601 logins en 3 minutos
+Severidad: media (seguridad)
+--------------------------------------------------------------------------------
+Se enviaron 3.601 peticiones de autenticacion a 20 por segundo desde una sola
+direccion IP, durante 3 minutos, y ninguna fue rechazada: 0 respuestas 429
+(Too Many Requests), ningun bloqueo temporal, ningun desafio de Cloudflare.
+
+Para un endpoint de login, eso significa que no hay (o no se activo) proteccion
+contra fuerza bruta ni contra credential stuffing. Combinado con el hallazgo 2
+-que distingue el motivo del rechazo- y con el hallazgo 3 -tokens sin
+expiracion-, el conjunto es el perfil tipico de un servicio de demostracion, no
+de un servicio productivo.
+
+Es un hallazgo con doble lectura y asi hay que leerlo: para esta prueba fue
+bueno (permitio medir el escenario que pide el enunciado sin interferencias);
+para un producto real seria un defecto de seguridad.
+
+Recomendacion para un servicio equivalente en produccion: limite de intentos
+por usuario y por IP, backoff incremental, y bloqueo temporal con captcha.
+
+
+HALLAZGO 5 - El servicio tiene micro-detenciones y una cola muy variable
+             entre ejecuciones
+Severidad: media (rendimiento / estabilidad)
+--------------------------------------------------------------------------------
+Dos corridas del MISMO escenario, separadas por 10 minutos, dieron colas muy
+distintas:
+
+                        corrida previa (11:21)   corrida de referencia (11:27)
+    p95                      806 ms                      483 ms
+    p99                    1.708 ms                      751 ms
+    maximo                 5.254 ms                    1.237 ms
+    peticiones > 1,5 s        54 (1,51 %)                  0 (0,00 %)
+    handshake TLS maximo   6.307 ms                      206 ms
+    tasa de error           0,00 %                      0,00 %
+
+El promedio y la mediana casi no se movieron (448 vs 398 ms y 383 vs 382 ms): lo
+que cambia es exclusivamente la cola.
+
+El csv crudo de la corrida previa muestra el mecanismo: en el segundo 155 el
+servicio no devolvio NINGUNA respuesta (0 peticiones completadas en ese segundo,
+mientras seguian entrando 20), la concurrencia salto de 10 a 42 peticiones en
+vuelo y al segundo siguiente se resolvieron 37 de golpe. Lo mismo, mas chico, en
+los segundos 140-142. En la corrida de referencia el mismo patron aparece
+atenuado: dos segundos con 7 y 13 respuestas, y los 14 tiempos sobre 1 s
+agrupados en los segundos 171 y 175.
+
+Es decir: el servicio no se degrada progresivamente con la carga, se detiene de
+a un segundo y se recupera. El perfil es compatible con un proceso Node de un
+solo hilo que se bloquea (recoleccion de basura, cold start de una instancia,
+reconexion a la base) o con una renegociacion de TLS en el borde de Cloudflare
+-el handshake de 6,3 s de la corrida previa apunta a eso-.
+
+Consecuencia metodologica, y es la mas importante del ejercicio: una sola
+ejecucion no caracteriza a este servicio. El veredicto de los criterios 1 y 3
+fue estable en las dos corridas; el del criterio 2 depende de la cola, y en la
+corrida previa el p99 lo habria incumplido (1.708 ms > 1.500 ms). Lo correcto es
+repetir la prueba varias veces y reportar la distribucion, no un numero suelto.
+
+Verificado en: evidencias/metricas-por-peticion.csv.gz y
+evidencias/corrida-previa-generador-subdimensionado/resumen.txt
+
+
+HALLAZGO 6 - El generador de carga estaba subdimensionado y descarto
+             iteraciones (aprendizaje de la herramienta)
+Severidad: ninguna para el servicio - critico para la validez de la medicion
+--------------------------------------------------------------------------------
+La primera corrida de este ejercicio reporto 17 "dropped_iterations": k6 no pudo
+lanzar 17 peticiones en el momento en que le correspondia. El TPS medido bajo a
+19,87 y la prueba quedo invalidada, porque el escenario que se midio ya no era
+"20 peticiones por segundo".
+
+La causa no fue el techo de VUs (maxVUs era 100 y el pico fue 42), sino los VUs
+PRE-ASIGNADOS, que eran 30. Los ejecutores de tipo arrival-rate reservan
+preAllocatedVUs antes de arrancar y, si hacen falta mas, los inicializan sobre
+la marcha; mientras se inicializan, las iteraciones que debian salir se
+descartan. Los descartes del csv crudo caen exactamente en los segundos en que
+la concurrencia cruzo 30 (segundos 140-142 y 155-156), que son los de la
+micro-detencion del hallazgo 5.
+
+El dimensionamiento correcto sale de la ley de Little:
+
+    VUs necesarios = TPS x tiempo de respuesta
+
+Con 20 TPS y el umbral de 1,5 s bastarian 30 VUs, y de ahi venia el numero
+original. Pero el generador tiene que aguantar el PEOR tiempo de respuesta, no
+el deseado: con la detencion de ~5 s observada, 20 x 5 = 100 VUs. Se
+pre-asignaron 100 (techo 200) y la corrida de referencia termino con 0
+descartes y un pico de 18 VUs.
+
+Queda documentado porque es un error silencioso y facil de cometer: la prueba
+"corre bien", el reporte se genera, y lo unico que delata que se midio otra cosa
+es una metrica que casi nadie mira. Por eso el script declara
+dropped_iterations: ['count==0'] como umbral y el reporte dedica un bloque al
+generador de carga: si la medicion no es valida, la prueba FALLA, no se publica.
+
+
+HALLAZGO 7 - Bajo carga el servicio responde MAS rapido que con una
+             peticion suelta
+Severidad: ninguna (observacion tecnica)
+--------------------------------------------------------------------------------
+Las mediciones puntuales con curl, una peticion a la vez, dieron entre 587 y
+665 ms. Bajo 20 TPS el promedio fue de 398 ms y la mediana de 382 ms: 200 ms
+MENOS por peticion con 20 veces mas carga.
+
+La explicacion esta en el desglose de tiempos: con carga sostenida las
+conexiones TCP/TLS se reutilizan (keep-alive) y el costo del handshake se paga
+una vez por conexion en lugar de una vez por peticion. En la corrida de
+referencia, la espera del servidor (http_req_waiting, p95 482 ms) es
+practicamente todo el tiempo de respuesta (p95 483 ms): conectar costo como
+maximo 197 ms y el handshake TLS 206 ms, y solo al principio.
+
+Importa para no sacar conclusiones falsas: medir "cuanto tarda el login" con un
+curl suelto sobrestima el tiempo del servidor, porque mide tambien el costo de
+abrir la conexion. Y al reves, si una prueba de carga desactivara la
+reutilizacion de conexiones (en k6, noConnectionReuse: true), los tiempos
+subirian sin que el servicio haya empeorado.
+
+
+HALLAZGO 8 - Cabeceras de la respuesta de autenticacion
+Severidad: baja-media (seguridad / cache)
+--------------------------------------------------------------------------------
+Las cabeceras observadas en la respuesta del login son: content-type,
+content-length, connection, access-control-allow-origin: *, etag, x-powered-by:
+Express, cf-cache-status: DYNAMIC, nel, report-to, server: cloudflare, date.
+
+Observaciones:
+  - No hay Cache-Control: no-store. Una respuesta que contiene un token de
+    acceso no deberia poder quedar en ninguna cache intermedia.
+  - Hay un ETag en la respuesta de un POST de login. Es inofensivo aqui, pero
+    es un ETag calculado sobre un cuerpo que contiene el token.
+  - No hay Strict-Transport-Security ni X-Content-Type-Options: nosniff.
+  - x-powered-by: Express expone el stack sin necesidad.
+  - access-control-allow-origin: * permite que cualquier origen web llame al
+    login; es coherente con una API publica de demostracion.
+
+Recomendacion: Cache-Control: no-store en toda respuesta de autenticacion, HSTS,
+nosniff, y quitar x-powered-by.
+
+
+HALLAZGO 9 - Verificaciones positivas
+Severidad: ninguna
+--------------------------------------------------------------------------------
+  [OK] Las 5 credenciales del enunciado son validas y autentican: las 3.601
+       peticiones devolvieron token (ninguna credencial resulto "quemada" ni
+       bloqueada despues de 720 autenticaciones cada una).
+  [OK] Cero errores de transporte: ni un timeout, ni una conexion rechazada, ni
+       un 5xx en 3 minutos de carga sostenida.
+  [OK] El cuerpo de la respuesta es consistente: siempre {"token":"<JWT>"} con
+       un JWT de tres partes.
+  [OK] El reparto del CSV salio parejo (720 o 721 peticiones por credencial),
+       lo que confirma que la parametrizacion funciona y que ninguna credencial
+       quedo sobre-representada.
+  [OK] La mediana se mantuvo plana (382 ms) de punta a punta de los 3 minutos:
+       no hay degradacion acumulativa por memoria o por conexiones.
+
+
+--------------------------------------------------------------------------------
+3. DECISIONES DE DISENIO DE LA AUTOMATIZACION
+--------------------------------------------------------------------------------
+
+[1] k6 2.4.0 en lugar de JMeter
+    El enunciado permite las dos. Se eligio k6 por tres razones concretas de
+    este ejercicio:
+      - El criterio es un TPS, y el ejecutor constant-arrival-rate de k6 fija
+        peticiones por segundo directamente. En JMeter, un Thread Group fija
+        usuarios concurrentes, y llegar a un TPS exacto obliga a un Constant
+        Throughput Timer (que trabaja por minuto y es aproximado) o a plugins
+        externos (jpgc Throughput Shaping Timer), que es una dependencia mas
+        que el revisor tendria que instalar.
+      - Los tres criterios se expresan como umbrales nativos y el proceso
+        termina con codigo 99 si alguno falla: el entregable dictamina, no
+        describe.
+      - El script es codigo legible y revisable en GitHub, frente a un .jmx que
+        es XML generado. Para un entregable cuyo objetivo es ser revisado por
+        otra persona, eso pesa.
+    Contra de k6, en honestidad: no tiene interfaz grafica para construir el
+    escenario ni el abanico de listeners de JMeter.
+
+[2] Meseta plana a 20 TPS, sin rampa
+    La metrica que mide el criterio 1 (http_reqs.rate) se calcula como
+    peticiones dividido la duracion TOTAL de la ejecucion. Una rampa dentro del
+    mismo escenario ensucia ese promedio y vuelve el criterio inmedible: 30 s de
+    rampa + 3 min a 20 TPS promedian 18,3 TPS y el umbral fallaria con el
+    servicio cumpliendo. Los VUs se pre-asignan antes de arrancar, de modo que
+    la meseta empieza en 20 TPS desde el primer segundo sin necesidad de rampa.
+
+[3] Cero dependencias externas: ni modulos remotos ni plugins
+    Dos puntos donde la receta habitual de k6 descarga codigo de internet en
+    tiempo de compilacion, y que aqui se resolvieron con codigo propio:
+      - Lectura del CSV: lo habitual es papaparse desde https://jslib.k6.io.
+        El formato que fija el enunciado (cabecera user,passwd, sin comas ni
+        comillas en los valores) se parsea en 25 lineas, que ademas validan los
+        datos y fallan temprano si el CSV viene mal.
+      - Reporte HTML: lo habitual es k6-reporter desde raw.githubusercontent.com,
+        apuntando a la rama main (no a una version fija).
+    Motivo: el enunciado pide un entregable reproducible por un tercero. Un
+    import remoto convierte la ejecucion en algo que depende de la red y de los
+    proxies de quien la corre, y de que un repositorio de terceros siga
+    publicado. El entregable solo necesita llegar al servicio bajo prueba.
+
+[4] Estado esperado declarado explicitamente (201)
+    http.expectedStatuses(201) en lugar del comportamiento por defecto (2xx-3xx
+    es exito). Ver hallazgo 1: sin esto, la tasa de error del criterio 3 no
+    mediria lo que el enunciado pide.
+
+[5] Reparto de credenciales round-robin determinista
+    exec.scenario.iterationInTest % cantidad de usuarios, no aleatorio. Con 5
+    credenciales y 3.600 peticiones cada una se usa 720 veces, exactamente. Un
+    reparto aleatorio daria proporciones distintas en cada corrida y dos
+    ejecuciones no serian comparables. El reporte muestra el reparto como
+    evidencia de que la parametrizacion desde el .csv realmente ocurre.
+
+[6] Tres validaciones por peticion, no solo el codigo de estado
+    Que responda 201 no alcanza: tambien se verifica que el cuerpo traiga un
+    token JWT de tres partes y que la peticion haya respondido por debajo de
+    1,5 s. Una prueba de carga que solo mire el status es ciega a un servicio
+    que responde rapido y vacio.
+
+[7] El criterio de tiempo se dictamina por percentiles y se reporta el maximo
+    "Tiempo de respuesta maximo 1,5 s" admite dos lecturas: que NINGUNA
+    peticion lo supere, o que lo cumpla el percentil de servicio. El umbral que
+    dictamina es p95 y p99 por debajo de 1.500 ms, porque en una medicion de
+    miles de peticiones contra un servicio de internet un unico pico de red no
+    deberia invalidar el resultado. Para no esconder nada, el reporte publica
+    siempre el maximo absoluto y el porcentaje de peticiones que superaron el
+    umbral, medido peticion por peticion (metrica
+    peticiones_dentro_del_umbral). En la corrida de referencia el resultado
+    cumple las dos lecturas: el maximo fue 1.237 ms y las peticiones sobre el
+    umbral fueron 0.
+
+[8] La validez de la medicion tambien es un umbral
+    dropped_iterations: ['count==0']. Si k6 no logro sostener el ritmo, la
+    prueba falla aunque el servicio haya respondido bien, porque el escenario
+    medido no es el pedido. Ver hallazgo 6.
+
+[9] Escenario smoke previo
+    Antes de lanzar 3.600 peticiones, un escenario de 5 (una por credencial)
+    valida script, datos y conectividad en 3 segundos. Es barato y evita
+    descubrir un CSV mal escrito a los dos minutos de carga.
+
+[10] Reportes autocontenidos y legibles sin herramientas
+     De cada ejecucion quedan cuatro vistas del mismo resultado: HTML (para
+     leer), texto (igual que la consola, diffeable y versionable), JSON (para
+     procesar) y csv por peticion (para analizar la distribucion). El HTML es un
+     unico archivo sin recursos externos: se abre desde el repositorio sin
+     descomprimir nada y funciona sin internet.
+
+[11] Todo en espaniol
+     Nombres de archivos, modulos, funciones, variables, validaciones,
+     comentarios y reportes. A diferencia del ejercicio 2 (Karate no soporta
+     dialectos de Gherkin y obliga a dejar las palabras clave en ingles), aqui
+     el script es JavaScript puro: lo unico en ingles son las APIs de k6
+     (http.post, check, Trend) y los nombres de sus metricas de serie
+     (http_req_duration), que son parte de la herramienta.
+
+[12] La carpeta resultados/ se versiona vacia
+     k6 escribe los reportes ahi y no crea directorios: en un clon nuevo, un
+     "k6 run" directo fallaria al generar el reporte. Se versiona un .gitkeep y
+     el contenido esta en .gitignore.
+
+
+--------------------------------------------------------------------------------
+4. RIESGOS IDENTIFICADOS
+--------------------------------------------------------------------------------
+
+[R1] Dependencia de un servicio publico de terceros
+     fakestoreapi.com no tiene SLA, ni versionado, ni compromiso de
+     disponibilidad. Si cambia el contrato (por ejemplo, si el login pasa a
+     responder 200) o si el servicio se cae, la prueba falla sin que exista un
+     defecto propio. Mitigacion implementada: URL base parametrizable
+     (-e URL_BASE=...) para apuntar a un mock o a otro ambiente.
+
+[R2] La cola de tiempos no es estable entre ejecuciones
+     Ver hallazgo 5: con el mismo escenario, el p99 paso de 751 ms a 1.708 ms
+     en 10 minutos. El veredicto del criterio 2 puede cambiar de una corrida a
+     otra. Mitigacion: repetir la prueba y reportar la distribucion; no tomar
+     una sola ejecucion como la verdad.
+
+[R3] La medicion incluye la latencia de la red del ejecutor
+     Se midio desde una red domestica contra un nodo de Cloudflare en Miami. El
+     tiempo de respuesta reportado es tiempo de respuesta percibido por ese
+     cliente, no tiempo de procesamiento del servidor. Ejecutar desde otra red o
+     region dara otros numeros. Mitigacion: el reporte publica el desglose
+     (http_req_waiting vs connecting vs tls) para poder separar red de servicio.
+
+[R4] Credenciales versionadas en el repositorio
+     datos/usuarios.csv tiene usuarios y passwords en claro. Son los datos que
+     entrega el enunciado, de un servicio publico de demostracion, y son
+     publicos en la documentacion de FakeStoreAPI. En un proyecto real esto no
+     se versiona: el archivo se inyecta en la ejecucion (variable
+     ARCHIVO_USUARIOS, ya implementada) y las credenciales salen de un gestor de
+     secretos.
+
+[R5] Carga contra infraestructura de terceros
+     La prueba genera 3.601 peticiones de autenticacion en 3 minutos contra un
+     servicio gratuito. Es una carga moderada y acotada a proposito: se ejecuto
+     el escenario que pide el enunciado y no se buscaron el punto de quiebre ni
+     la saturacion, que si serian abusivos contra un servicio que no es propio.
+
+[R6] El escenario solo cubre el camino exitoso
+     Todas las credenciales del CSV son validas, asi que la prueba mide el login
+     exitoso. Un ambiente real recibe tambien intentos fallidos, que en este
+     servicio toman otro camino de codigo (401 con texto plano) y podrian tener
+     otro costo. Queda propuesto en la seccion 5.
+
+
+--------------------------------------------------------------------------------
+5. RECOMENDACIONES Y SIGUIENTES PASOS
+--------------------------------------------------------------------------------
+
+Sobre el servicio probado
+  1. Devolver 200 OK en un login exitoso y reservar 201 para la creacion de
+     recursos (hallazgo 1).
+  2. Devolver los errores en JSON, con un codigo de error estable ademas del
+     mensaje legible (hallazgo 2).
+  3. Agregar "exp" al JWT, emitir un token por sesion (jti) y permitir
+     revocarlo (hallazgo 3).
+  4. Limitar los intentos de autenticacion por usuario y por IP (hallazgo 4).
+  5. Cache-Control: no-store, HSTS y X-Content-Type-Options en las respuestas
+     de autenticacion; quitar x-powered-by (hallazgo 8).
+  6. Investigar las micro-detenciones de un segundo: son el unico origen de los
+     tiempos sobre 1 s y, si crecieran, serian lo primero que incumpliria el
+     acuerdo de 1,5 s (hallazgo 5).
+
+Sobre la automatizacion (fuera del alcance acordado para este ejercicio)
+  7. Repetir la prueba N veces de forma programada y comparar la tendencia del
+     p95/p99 entre corridas, en lugar de decidir con una sola ejecucion.
+  8. Agregar un escenario escalonado (10/20/30/40 TPS) para encontrar el punto
+     en que se rompe el umbral de 1,5 s y conocer el margen real de capacidad.
+  9. Agregar un escenario de credenciales invalidas bajo carga, para medir el
+     camino de error (y detectar si aparece limitacion de tasa).
+ 10. Integrar la prueba a un pipeline (GitHub Actions) publicando el reporte y
+     el resumen.json como artefactos, y usando el codigo de salida 99 como
+     condicion de falla del build.
+ 11. Enviar las metricas a un backend de series temporales (InfluxDB o
+     Prometheus con la salida nativa de k6) para ver la evolucion por segundo
+     en lugar de un resumen agregado.
+
+
+--------------------------------------------------------------------------------
+6. CONCLUSION
+--------------------------------------------------------------------------------
+
+El servicio de login soporta los 20 TPS que pide el enunciado y los cumple con
+holgura: 3.601 peticiones en 3 minutos, 0 errores, p95 de 483 ms contra un
+umbral de 1.500 ms, y ninguna peticion por encima de ese umbral. Los tres
+criterios se cumplen y k6 lo dictamina solo, terminando con codigo de salida 0.
+
+Lo interesante del ejercicio no esta en el veredicto, que es verde, sino en lo
+que aparecio al mirar las respuestas y la distribucion:
+
+  - El login exitoso responde 201 y el fallido responde texto plano. Una prueba
+    escrita "de memoria" contra 200 y JSON habria reportado 100 % de error, o
+    peor, habria dado 0 % de error validando la nada.
+  - El token no vence nunca y es identico para todos los logins del mismo
+    usuario en el mismo segundo: no hay sesion que se pueda revocar ni auditar.
+  - 3.601 autenticaciones seguidas desde una sola IP no activaron ningun limite.
+  - El servicio no se degrada con la carga: se detiene de a un segundo y se
+    recupera. Esas micro-detenciones son el unico origen de los tiempos altos y
+    son lo que hizo que, diez minutos antes, la misma prueba diera un p99 de
+    1.708 ms. Una sola corrida no alcanza para caracterizar este servicio.
+
+Y un aprendizaje de la herramienta que vale lo mismo que los hallazgos del
+servicio: la primera corrida descarto 17 iteraciones porque el generador de
+carga estaba dimensionado para el tiempo de respuesta DESEADO (1,5 s) y no para
+el peor observado (5 s). La prueba "funcionaba", el reporte se generaba, y sin
+embargo no estaba midiendo 20 TPS. Desde entonces la validez de la medicion es
+un umbral mas: si k6 no sostuvo el ritmo, la prueba falla, aunque el servicio
+haya respondido perfecto.
