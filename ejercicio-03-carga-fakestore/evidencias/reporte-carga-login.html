@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prueba de carga del login - Ejercicio 3</title>
+<style>:root{--tinta:#16202b;--suave:#5d6b7a;--borde:#dfe5ec;--fondo:#f5f7fa;--ok:#1f7a4d;--ok-suave:#e8f5ee;--falla:#b3261e;--falla-suave:#fdeceb;--acento:#1b4f91}*{box-sizing:border-box}body{margin:0;padding:32px 20px 64px;background:var(--fondo);color:var(--tinta);font:15px/1.55 "Segoe UI",Roboto,Helvetica,Arial,sans-serif}main{max-width:1060px;margin:0 auto}header.portada{background:#fff;border:1px solid var(--borde);border-radius:10px;padding:24px 28px}header.portada h1{margin:0 0 4px;font-size:22px}p.servicio{margin:0 0 18px;color:var(--suave);font-family:ui-monospace,Consolas,monospace;font-size:13px}.veredicto-global{display:inline-block;padding:6px 14px;border-radius:999px;font-weight:700;font-size:13px;letter-spacing:.04em}.veredicto-global.ok{background:var(--ok-suave);color:var(--ok)}.veredicto-global.falla{background:var(--falla-suave);color:var(--falla)}dl.ficha{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px 24px;margin:20px 0 0}dl.ficha dt{color:var(--suave);font-size:11.5px;text-transform:uppercase;letter-spacing:.05em}dl.ficha dd{margin:2px 0 0;font-size:17px;font-weight:600}h2{font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:var(--suave);margin:32px 0 12px}section.criterios{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px}article.criterio{background:#fff;border:1px solid var(--borde);border-left:5px solid var(--ok);border-radius:10px;padding:18px 20px}article.criterio.falla{border-left-color:var(--falla)}article.criterio .etiqueta{margin:0;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--suave)}article.criterio h3{margin:4px 0 12px;font-size:16px}article.criterio .medido{margin:0;font-family:ui-monospace,Consolas,monospace;font-size:13px}article.criterio .referencia{margin:6px 0 14px;color:var(--suave);font-size:12.5px}article.criterio .veredicto{margin:0;font-weight:700;font-size:13px;letter-spacing:.04em;color:var(--ok)}article.criterio.falla .veredicto{color:var(--falla)}table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--borde);border-radius:10px;overflow:hidden;font-size:13.5px}caption{caption-side:bottom;text-align:left;color:var(--suave);font-size:12.5px;padding:8px 2px}th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--borde)}thead th{background:#eef2f7;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--suave)}tbody tr:last-child th,tbody tr:last-child td{border-bottom:0}td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:ui-monospace,Consolas,monospace}tbody tr.falla{background:var(--falla-suave)}td.estado{font-weight:600}tr.ok td.estado{color:var(--ok)}tr.falla td.estado{color:var(--falla)}td.barra{width:34%}td.barra span{display:block;height:9px;border-radius:5px;background:var(--acento);min-width:2px}code{font-family:ui-monospace,Consolas,monospace;font-size:12.5px}.desbordable{overflow-x:auto}footer{margin-top:36px;color:var(--suave);font-size:12.5px}@media(max-width:620px){body{padding:18px 14px 40px}dl.ficha dd{font-size:15px}}</style>
+</head>
+<body>
+<main>
+  <header class="portada">
+    <h1>Ejercicio 3 &mdash; Prueba de carga del servicio de login</h1>
+    <p class="servicio">POST https://fakestoreapi.com/auth/login</p>
+    <span class="veredicto-global ok">PRUEBA EXITOSA</span>
+    <dl class="ficha">
+      <div><dt>Escenario</dt><dd>carga</dd></div>
+      <div><dt>Peticiones</dt><dd>3.601</dd></div>
+      <div><dt>TPS alcanzado</dt><dd>19,95</dd></div>
+      <div><dt>p95</dt><dd>482,69 ms</dd></div>
+      <div><dt>Tasa de error</dt><dd>0,00 %</dd></div>
+      <div><dt>Duración</dt><dd>180,5 s</dd></div>
+      <div><dt>VUs en el pico</dt><dd>18</dd></div>
+      <div><dt>Iteraciones descartadas</dt><dd>0</dd></div>
+      <div><dt>Ejecutado</dt><dd>14/11/2026 11:27:17</dd></div>
+    </dl>
+  </header>
+
+  <h2>Criterios de aceptación del enunciado</h2>
+  <section class="criterios">
+  <article class="criterio ok">
+    <p class="etiqueta">Criterio 1</p>
+    <h3>Alcanzar al menos 20 TPS</h3>
+    <p class="medido">19,95 TPS (3.601 peticiones en 180,5 s)</p>
+    <p class="referencia">minimo aceptado 19,50 TPS, iteraciones descartadas 0</p>
+    <p class="veredicto">CUMPLE</p>
+  </article>
+  <article class="criterio ok">
+    <p class="etiqueta">Criterio 2</p>
+    <h3>Tiempo de respuesta maximo 1,5 s</h3>
+    <p class="medido">p95 482,69 ms | p99 751,23 ms | maximo 1.236,74 ms</p>
+    <p class="referencia">0 de 3.601 peticiones sobre el umbral (0,00 %)</p>
+    <p class="veredicto">CUMPLE</p>
+  </article>
+  <article class="criterio ok">
+    <p class="etiqueta">Criterio 3</p>
+    <h3>Tasa de error menor al 3 % del total</h3>
+    <p class="medido">0,00 % (0 de 3.601 peticiones)</p>
+    <p class="referencia">logins exitosos con token 100,00 %</p>
+    <p class="veredicto">CUMPLE</p>
+  </article>
+  </section>
+
+  <h2>Tiempos de respuesta</h2>
+  <div class="desbordable">
+<table>
+  <thead><tr><th scope="col">Métrica (ms)</th><th scope="col" class="num">min</th><th scope="col" class="num">avg</th><th scope="col" class="num">med</th><th scope="col" class="num">p(90)</th><th scope="col" class="num">p(95)</th><th scope="col" class="num">p(99)</th><th scope="col" class="num">max</th></tr></thead>
+  <tbody>
+<tr><th scope="row">Tiempo de respuesta total (http_req_duration)</th><td class="num">318,1</td><td class="num">398,2</td><td class="num">382,3</td><td class="num">446,9</td><td class="num">482,7</td><td class="num">751,2</td><td class="num">1.236,7</td></tr>
+<tr><th scope="row">Tiempo de respuesta del login (metrica propia)</th><td class="num">318,1</td><td class="num">398,2</td><td class="num">382,3</td><td class="num">446,9</td><td class="num">482,7</td><td class="num">751,2</td><td class="num">1.236,7</td></tr>
+<tr><th scope="row">Espera del servidor (http_req_waiting)</th><td class="num">318,1</td><td class="num">397,7</td><td class="num">382,0</td><td class="num">445,8</td><td class="num">481,6</td><td class="num">750,7</td><td class="num">1.209,9</td></tr>
+<tr><th scope="row">Envio de la peticion (http_req_sending)</th><td class="num">0,0</td><td class="num">0,2</td><td class="num">0,0</td><td class="num">0,5</td><td class="num">0,5</td><td class="num">0,7</td><td class="num">4,6</td></tr>
+<tr><th scope="row">Recepcion de la respuesta (http_req_receiving)</th><td class="num">0,0</td><td class="num">0,3</td><td class="num">0,0</td><td class="num">0,5</td><td class="num">1,0</td><td class="num">4,5</td><td class="num">95,5</td></tr>
+<tr><th scope="row">Conexion TCP (http_req_connecting)</th><td class="num">0,0</td><td class="num">2,5</td><td class="num">0,0</td><td class="num">0,0</td><td class="num">0,0</td><td class="num">89,6</td><td class="num">196,8</td></tr>
+<tr><th scope="row">Handshake TLS (http_req_tls_handshaking)</th><td class="num">0,0</td><td class="num">2,7</td><td class="num">0,0</td><td class="num">0,0</td><td class="num">0,0</td><td class="num">94,8</td><td class="num">205,6</td></tr>
+<tr><th scope="row">Duracion de la iteracion (iteration_duration)</th><td class="num">318,7</td><td class="num">403,6</td><td class="num">383,5</td><td class="num">461,0</td><td class="num">523,0</td><td class="num">751,2</td><td class="num">1.236,7</td></tr>
+  </tbody>
+</table>
+  </div>
+
+  <h2>Validaciones por petición</h2>
+  <table>
+    <thead><tr><th scope="col">Validación</th><th scope="col" class="num">Éxitos</th><th scope="col" class="num">Fallas</th><th scope="col" class="num">%</th></tr></thead>
+    <tbody>
+<tr class="ok"><th scope="row">el login responde HTTP 201 Created</th><td class="num">3.601</td><td class="num">0</td><td class="num">100,00 %</td></tr>
+<tr class="ok"><th scope="row">la respuesta entrega un token JWT valido</th><td class="num">3.601</td><td class="num">0</td><td class="num">100,00 %</td></tr>
+<tr class="ok"><th scope="row">el tiempo de respuesta es menor a 1,5 s</th><td class="num">3.601</td><td class="num">0</td><td class="num">100,00 %</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Parametrización: peticiones por credencial del CSV</h2>
+  <table>
+    <thead><tr><th scope="col">Usuario</th><th scope="col" class="num">Peticiones</th><th scope="col">Reparto</th><th scope="col" class="num">%</th></tr></thead>
+    <tbody>
+<tr><th scope="row"><code>donero</code></th><td class="num">721</td><td class="barra"><span style="width:20.0%"></span></td><td class="num">20,02 %</td></tr>
+<tr><th scope="row"><code>johnd</code></th><td class="num">720</td><td class="barra"><span style="width:20.0%"></span></td><td class="num">19,99 %</td></tr>
+<tr><th scope="row"><code>kevinryan</code></th><td class="num">720</td><td class="barra"><span style="width:20.0%"></span></td><td class="num">19,99 %</td></tr>
+<tr><th scope="row"><code>derek</code></th><td class="num">720</td><td class="barra"><span style="width:20.0%"></span></td><td class="num">19,99 %</td></tr>
+<tr><th scope="row"><code>mor_2314</code></th><td class="num">720</td><td class="barra"><span style="width:20.0%"></span></td><td class="num">19,99 %</td></tr>
+    </tbody>
+    <caption>Reparto round-robin determinista: cada credencial de <code>datos/usuarios.csv</code>
+    se usa la misma cantidad de veces.</caption>
+  </table>
+
+  <h2>Umbrales declarados</h2>
+  <table>
+    <thead><tr><th scope="col">Métrica</th><th scope="col">Condición</th><th scope="col">Resultado</th></tr></thead>
+    <tbody>
+<tr class="ok"><th scope="row"><code>peticiones_por_usuario{usuario:johnd}</code></th><td><code>count&gt;0</code></td><td class="estado">cumple</td></tr>
+<tr class="ok"><th scope="row"><code>http_req_failed</code></th><td><code>rate&lt;0.03</code></td><td class="estado">cumple</td></tr>
+<tr class="ok"><th scope="row"><code>checks</code></th><td><code>rate&gt;0.97</code></td><td class="estado">cumple</td></tr>
+<tr class="ok"><th scope="row"><code>dropped_iterations</code></th><td><code>count==0</code></td><td class="estado">cumple</td></tr>
+<tr class="ok"><th scope="row"><code>http_req_duration</code></th><td><code>p(95)&lt;1500</code></td><td class="estado">cumple</td></tr>
+<tr class="ok"><th scope="row"><code>http_req_duration</code></th><td><code>p(99)&lt;1500</code></td><td class="estado">cumple</td></tr>
+<tr class="ok"><th scope="row"><code>peticiones_por_usuario{usuario:kevinryan}</code></th><td><code>count&gt;0</code></td><td class="estado">cumple</td></tr>
+<tr class="ok"><th scope="row"><code>login_exitoso</code></th><td><code>rate&gt;0.97</code></td><td class="estado">cumple</td></tr>
+<tr class="ok"><th scope="row"><code>peticiones_por_usuario{usuario:derek}</code></th><td><code>count&gt;0</code></td><td class="estado">cumple</td></tr>
+<tr class="ok"><th scope="row"><code>peticiones_por_usuario{usuario:mor_2314}</code></th><td><code>count&gt;0</code></td><td class="estado">cumple</td></tr>
+<tr class="ok"><th scope="row"><code>http_reqs</code></th><td><code>rate&gt;=19.5</code></td><td class="estado">cumple</td></tr>
+<tr class="ok"><th scope="row"><code>peticiones_por_usuario{usuario:donero}</code></th><td><code>count&gt;0</code></td><td class="estado">cumple</td></tr>
+<tr class="ok"><th scope="row"><code>peticiones_dentro_del_umbral</code></th><td><code>rate&gt;0.97</code></td><td class="estado">cumple</td></tr>
+    </tbody>
+    <caption>Los evalúa k6: si alguno no se cumple, el proceso termina con código de salida 99.</caption>
+  </table>
+
+  <footer>
+    Generado por <code>src/lib/reporte.js</code> a partir del resumen de k6, sin dependencias
+    externas. Datos crudos en <code>resultados/resumen.json</code> y una fila por petición en
+    <code>resultados/metricas-por-peticion.csv.gz</code>.
+  </footer>
+</main>
+</body>
+</html>
