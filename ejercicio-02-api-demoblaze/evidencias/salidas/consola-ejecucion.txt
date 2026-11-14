@@ -1,0 +1,217 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -------------< com.qa.pruebas:ejercicio-02-api-demoblaze >--------------
+[INFO] Building Ejercicio 02 - Pruebas REST signup y login Demoblaze 1.0.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.2.0:clean (default-clean) @ ejercicio-02-api-demoblaze ---
+[INFO] Deleting C:\Users\catac\workspace\pruebaV2\ejercicio-02-api-demoblaze\target
+[INFO] 
+[INFO] --- resources:3.4.0:resources (default-resources) @ ejercicio-02-api-demoblaze ---
+[INFO] skip non existing resourceDirectory C:\Users\catac\workspace\pruebaV2\ejercicio-02-api-demoblaze\src\main\resources
+[INFO] 
+[INFO] --- compiler:3.16.0:compile (default-compile) @ ejercicio-02-api-demoblaze ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- resources:3.4.0:testResources (default-testResources) @ ejercicio-02-api-demoblaze ---
+[INFO] Copying 6 resources from src\test\java to target\test-classes
+[INFO] Copying 1 resource from src\test\resources to target\test-classes
+[INFO] 
+[INFO] --- compiler:3.16.0:testCompile (default-testCompile) @ ejercicio-02-api-demoblaze ---
+[WARNING] I/O error reading dependency state: C:\Users\catac\workspace\pruebaV2\ejercicio-02-api-demoblaze\target\classes: C:\Users\catac\workspace\pruebaV2\ejercicio-02-api-demoblaze\target\classes
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 3 source files with javac [debug release 17] to target\test-classes
+[INFO] 
+[INFO] --- surefire:3.6.1:test (default-test) @ ejercicio-02-api-demoblaze ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.qa.demoblaze.runners.ApiTestSuite
+20:10:54 DEBUG [config] classpath:karate-config.js
+20:10:54 DEBUG waiting for 2 features to complete
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by com.oracle.truffle.api.nodes.NodeClassImpl$NodeFieldData (file:/C:/Users/catac/.m2/repository/org/graalvm/truffle/truffle-api/24.0.0/truffle-api-24.0.0.jar)
+WARNING: Please consider reporting this to the maintainers of class com.oracle.truffle.api.nodes.NodeClassImpl$NodeFieldData
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
+20:10:55 INFO  >> lock acquired, begin callSingle: classpath:com/qa/demoblaze/fixtures/datos-de-prueba.js
+20:10:55 INFO  << lock released, cached callSingle: classpath:com/qa/demoblaze/fixtures/datos-de-prueba.js
+20:10:55 INFO  >> lock acquired, begin callonce: read('classpath:com/qa/demoblaze/fixtures/usuario-registrado.feature')
+20:10:56 DEBUG request:
+1 > POST https://api.demoblaze.com/signup
+1 > Content-Type: application/json; charset=UTF-8
+1 > Content-Length: 72
+1 > Host: api.demoblaze.com
+1 > Connection: Keep-Alive
+1 > User-Agent: Apache-HttpClient/4.5.14 (Java/25.0.2)
+1 > Accept-Encoding: gzip,deflate
+{"username":"qa.login.20261113.201055802","password":"UHJ1ZWJhLjIwMjY="}
+
+20:10:56 DEBUG response time in milliseconds: 637
+1 < 200
+1 < content-type: application/json
+1 < x-cloud-trace-context: 97c89234a610cb8bba245f651ab4d1fa;o=1
+1 < date: Sat, 14 Nov 2026 01:12:04 GMT
+1 < server: Google Frontend
+1 < Content-Length: 3
+""
+
+
+20:10:56 INFO  [print] Dato de prueba listo. Usuario: qa.login.20261113.201055802 - ya existia: false 
+20:10:56 INFO  << lock released, cached callonce: read('classpath:com/qa/demoblaze/fixtures/usuario-registrado.feature')
+20:10:56 INFO  [print] CP03 - entrada enviada: {
+  "username": "qa.login.20261113.201055802",
+  "password": "UHJ1ZWJhLjIwMjY="
+}
+ 
+20:10:56 DEBUG request:
+1 > POST https://api.demoblaze.com/login
+1 > Content-Type: application/json; charset=UTF-8
+1 > Content-Length: 72
+1 > Host: api.demoblaze.com
+1 > Connection: Keep-Alive
+1 > User-Agent: Apache-HttpClient/4.5.14 (Java/25.0.2)
+1 > Accept-Encoding: gzip,deflate
+{"username":"qa.login.20261113.201055802","password":"UHJ1ZWJhLjIwMjY="}
+
+20:10:57 DEBUG response time in milliseconds: 421
+1 < 200
+1 < content-type: application/json
+1 < vary: Accept-Encoding
+1 < x-cloud-trace-context: 863ba52eed1c666d2023f7c03ef496da
+1 < date: Sat, 14 Nov 2026 01:12:04 GMT
+1 < server: Google Frontend
+1 < Transfer-Encoding: chunked
+"Auth_token: cWEubG9naW4uMjAyNjExMTMuMjAxMDU1ODAyMTc5NTIxOA=="
+
+
+20:10:57 INFO  [print] CP03 - salida recibida: "Auth_token: cWEubG9naW4uMjAyNjExMTMuMjAxMDU1ODAyMTc5NTIxOA==" 
+20:10:57 INFO  [print] CP03 - token decodificado: qa.login.20261113.2010558021795218 
+20:10:57 DEBUG over-writing existing variable 'Codificador' with new value: Java.type('com.qa.demoblaze.utils.Codificador')
+20:10:57 INFO  [print] Evidencia de CP03 escrita en C:\Users\catac\workspace\pruebaV2\ejercicio-02-api-demoblaze\target\evidencias\CP03.json 
+20:10:57 INFO  [print] CP04 - entrada enviada: {
+  "username": "qa.login.20261113.201055802",
+  "password": "UGFzc3dvcmRJbmNvcnJlY3RvLjk5OQ=="
+}
+ 
+20:10:57 DEBUG request:
+1 > POST https://api.demoblaze.com/login
+1 > Content-Type: application/json; charset=UTF-8
+1 > Content-Length: 88
+1 > Host: api.demoblaze.com
+1 > Connection: Keep-Alive
+1 > User-Agent: Apache-HttpClient/4.5.14 (Java/25.0.2)
+1 > Accept-Encoding: gzip,deflate
+{"username":"qa.login.20261113.201055802","password":"UGFzc3dvcmRJbmNvcnJlY3RvLjk5OQ=="}
+
+20:10:57 DEBUG response time in milliseconds: 384
+1 < 200
+1 < content-type: application/json
+1 < vary: Accept-Encoding
+1 < x-cloud-trace-context: 87faffd8f10c3bfc7da539c83bfd9911
+1 < date: Sat, 14 Nov 2026 01:12:05 GMT
+1 < server: Google Frontend
+1 < Transfer-Encoding: chunked
+{"errorMessage":"Wrong password."}
+
+
+20:10:57 INFO  [print] CP04 - salida recibida: {
+  "errorMessage": "Wrong password."
+}
+ 
+20:10:57 INFO  [print] Evidencia de CP04 escrita en C:\Users\catac\workspace\pruebaV2\ejercicio-02-api-demoblaze\target\evidencias\CP04.json 
+---------------------------------------------------------
+feature: classpath:com/qa/demoblaze/features/autenticacion-login.feature
+scenarios:  2 | passed:  2 | failed:  0 | time: 2,1108
+---------------------------------------------------------
+
+20:10:58 INFO  <<pass>> feature 1 of 2 (1 remaining) classpath:com/qa/demoblaze/features/autenticacion-login.feature
+20:10:58 INFO  [print] CP01 - entrada enviada: {
+  "username": "qa.nuevo.20261113.201055801",
+  "password": "UHJ1ZWJhLjIwMjY="
+}
+ 
+20:10:58 DEBUG request:
+1 > POST https://api.demoblaze.com/signup
+1 > Content-Type: application/json; charset=UTF-8
+1 > Content-Length: 72
+1 > Host: api.demoblaze.com
+1 > Connection: Keep-Alive
+1 > User-Agent: Apache-HttpClient/4.5.14 (Java/25.0.2)
+1 > Accept-Encoding: gzip,deflate
+{"username":"qa.nuevo.20261113.201055801","password":"UHJ1ZWJhLjIwMjY="}
+
+20:10:59 DEBUG response time in milliseconds: 404
+1 < 200
+1 < content-type: application/json
+1 < x-cloud-trace-context: 97c03bfcd7bdfc11ff646a0f03fac726
+1 < date: Sat, 14 Nov 2026 01:12:06 GMT
+1 < server: Google Frontend
+1 < Content-Length: 3
+""
+
+
+20:10:59 INFO  [print] CP01 - salida recibida: "" 
+20:10:59 INFO  [print] Evidencia de CP01 escrita en C:\Users\catac\workspace\pruebaV2\ejercicio-02-api-demoblaze\target\evidencias\CP01.json 
+20:10:59 INFO  [print] CP02 - entrada enviada (usuario ya registrado en CP01): {
+  "username": "qa.nuevo.20261113.201055801",
+  "password": "UHJ1ZWJhLjIwMjY="
+}
+ 
+20:10:59 DEBUG request:
+1 > POST https://api.demoblaze.com/signup
+1 > Content-Type: application/json; charset=UTF-8
+1 > Content-Length: 72
+1 > Host: api.demoblaze.com
+1 > Connection: Keep-Alive
+1 > User-Agent: Apache-HttpClient/4.5.14 (Java/25.0.2)
+1 > Accept-Encoding: gzip,deflate
+{"username":"qa.nuevo.20261113.201055801","password":"UHJ1ZWJhLjIwMjY="}
+
+20:10:59 DEBUG response time in milliseconds: 328
+1 < 200
+1 < content-type: application/json
+1 < vary: Accept-Encoding
+1 < x-cloud-trace-context: 5964d23ffde60648453953c9a1cddaf2
+1 < date: Sat, 14 Nov 2026 01:12:06 GMT
+1 < server: Google Frontend
+1 < Transfer-Encoding: chunked
+{"errorMessage":"This user already exist."}
+
+
+20:10:59 INFO  [print] CP02 - salida recibida: {
+  "errorMessage": "This user already exist."
+}
+ 
+20:10:59 INFO  [print] Evidencia de CP02 escrita en C:\Users\catac\workspace\pruebaV2\ejercicio-02-api-demoblaze\target\evidencias\CP02.json 
+---------------------------------------------------------
+feature: classpath:com/qa/demoblaze/features/registro-signup.feature
+scenarios:  2 | passed:  2 | failed:  0 | time: 0,7811
+---------------------------------------------------------
+
+20:10:59 INFO  <<pass>> feature 2 of 2 (0 remaining) classpath:com/qa/demoblaze/features/registro-signup.feature
+Karate version: 1.5.2
+======================================================
+elapsed:   6,33 | threads:    1 | thread time: 2,89 
+features:     2 | skipped:    0 | efficiency: 0,46
+scenarios:    4 | passed:     4 | failed: 0
+======================================================
+
+HTML report: (paste into browser to view) | Karate version: 1.5.2
+file:///C:/Users/catac/workspace/pruebaV2/ejercicio-02-api-demoblaze/target/karate-reports/karate-summary.html
+===================================================================
+
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.896 s -- in com.qa.demoblaze.runners.ApiTestSuite
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  11.757 s
+[INFO] Finished at: 2026-11-13T20:11:00-05:00
+[INFO] ------------------------------------------------------------------------
