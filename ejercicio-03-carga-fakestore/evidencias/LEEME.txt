@@ -1,0 +1,79 @@
+EVIDENCIAS DE LA EJECUCION
+================================================================================
+
+Todo lo que hay aqui corresponde a la ejecucion verificada del 14/11/2026,
+11:24 a 11:27 (hora local, UTC-5):
+
+    20 TPS durante 3 minutos | 3.601 peticiones | 0 errores
+    19,95 TPS | p95 483 ms | maximo 1.237 ms | 0,00 % de error
+    Los 3 criterios del enunciado se cumplen (k6 termino con codigo 0)
+
+Contenido de esta carpeta:
+
+  reporte-carga-login.html
+      Reporte HTML de la ejecucion. Es UN SOLO archivo, sin recursos externos:
+      se descarga y se abre en cualquier navegador, sin descomprimir nada y sin
+      conexion a internet.
+
+      Arriba, el veredicto de los tres criterios del enunciado con el valor
+      medido de cada uno. Despues: desglose de tiempos (total, espera del
+      servidor, conexion, TLS), las validaciones por peticion, el reparto de
+      peticiones por credencial del CSV y la lista de umbrales con su resultado.
+
+  resumen.txt
+      El mismo resumen que se imprimio en la consola al terminar la prueba, en
+      texto plano. Es la evidencia mas rapida de leer y la unica que se puede
+      comparar con un diff entre dos corridas.
+
+  resumen.json
+      Las metricas crudas tal como las entrega k6 al final de la ejecucion
+      (contadores, percentiles, resultado de cada umbral). Es la fuente con la
+      que se genero el HTML y el texto: sirve para verificar que los numeros
+      publicados son los que midio la herramienta, y para procesarlos.
+
+  consola-ejecucion.txt
+      Salida completa de la ejecucion, de principio a fin: la version de k6, la
+      configuracion del escenario, el avance segundo a segundo (peticiones
+      completadas y VUs activos en cada momento) y el resumen final.
+
+  eventos-k6.log
+      Log de eventos de k6. En esta corrida tiene una sola linea -la
+      configuracion de la prueba- y eso es, en si mismo, la evidencia: no hubo
+      un solo aviso, ni un login fallido, ni una iteracion descartada. Cuando
+      una peticion falla, aqui queda una linea por falla con el usuario, el
+      codigo HTTP, el tiempo y el cuerpo de la respuesta.
+
+  metricas-por-peticion.csv.gz
+      Las 75.984 mediciones individuales de la ejecucion, una por fila, con sus
+      etiquetas (metrica, momento, valor, usuario, escenario, codigo HTTP, URL).
+      Comprimido ocupa 360 KB; descomprimido, unos 9 MB.
+
+      Para abrirlo:
+          gzip -d metricas-por-peticion.csv.gz          (Linux / macOS / Git Bash)
+          7-Zip o WinRAR                                 (Windows)
+
+      Es el insumo para analizar lo que un resumen agregado no muestra. Por
+      ejemplo, las peticiones por segundo:
+
+          gzip -dc metricas-por-peticion.csv.gz | awk -F, '$1=="http_reqs"'
+
+      Con ese archivo se verificaron el hallazgo 5 (las micro-detenciones del
+      servicio) y el hallazgo 6 (el momento exacto en que se descartaron
+      iteraciones en la corrida previa) de conclusiones.txt.
+
+  corrida-previa-generador-subdimensionado/
+      La corrida de las 11:21, descartada a proposito y conservada como
+      evidencia del hallazgo 6: con 30 VUs pre-asignados, k6 no pudo sostener
+      el ritmo durante una detencion del servicio y descarto 17 iteraciones, de
+      modo que el TPS medido (19,87) ya no correspondia al escenario pedido.
+
+      Se conservan su resumen.txt y su resumen.json. Sirven para comparar las
+      dos corridas del mismo escenario separadas por 10 minutos (hallazgo 5):
+      el promedio y la mediana casi no cambian, la cola cambia por completo.
+
+No hay capturas de pantalla en este ejercicio: en una prueba de carga la
+evidencia util son las metricas de las 3.601 peticiones y el veredicto de los
+umbrales, que es exactamente lo que contienen estos archivos.
+
+Para generar evidencia nueva basta con ejecutar la prueba (ver readme.txt):
+queda en la carpeta resultados/, con los mismos nombres de archivo.

@@ -1,0 +1,90 @@
+================================================================================
+ EJERCICIO 3 - PRUEBA DE CARGA DEL SERVICIO DE LOGIN
+ POST https://fakestoreapi.com/auth/login
+================================================================================
+
+ Escenario ........... carga
+ Fecha ............... 14/11/2026 11:27:17
+ Duracion ............ 180,5 s
+ Peticiones .......... 3.601
+ Credenciales ........ 5 usuarios parametrizados desde el CSV
+
+--------------------------------------------------------------------------------
+ CRITERIOS DE ACEPTACION DEL ENUNCIADO
+--------------------------------------------------------------------------------
+
+ [CUMPLE   ]  1. Alcanzar al menos 20 TPS
+                Medido: 19,95 TPS (3.601 peticiones en 180,5 s)
+                (minimo aceptado 19,50 TPS, iteraciones descartadas 0)
+
+ [CUMPLE   ]  2. Tiempo de respuesta maximo 1,5 s
+                Medido: p95 482,69 ms | p99 751,23 ms | maximo 1.236,74 ms
+                (0 de 3.601 peticiones sobre el umbral (0,00 %))
+
+ [CUMPLE   ]  3. Tasa de error menor al 3 % del total
+                Medido: 0,00 % (0 de 3.601 peticiones)
+                (logins exitosos con token 100,00 %)
+
+--------------------------------------------------------------------------------
+ TIEMPO DE RESPUESTA (ms)
+--------------------------------------------------------------------------------
+
+   min       avg       med       p(90)     p(95)     p(99)     max       
+   318       398       382       447       483       751       1.237     
+
+ Espera del servidor (http_req_waiting) p95 ... 481,58 ms
+ Conexion TCP (http_req_connecting) maximo .... 196,83 ms
+ Handshake TLS (http_req_tls_handshaking) max . 205,64 ms
+
+--------------------------------------------------------------------------------
+ GENERADOR DE CARGA
+--------------------------------------------------------------------------------
+
+ Iteraciones completadas ...................... 3.601
+ Iteraciones descartadas ...................... 0
+ VUs en el pico ............................... 18
+ VUs pre-asignados / techo .................... 100
+
+ Una iteracion descartada significa que k6 no pudo lanzar una peticion en el
+ momento que le correspondia: el TPS real seria menor que el configurado y la
+ medicion no representaria el escenario pedido.
+
+--------------------------------------------------------------------------------
+ VALIDACIONES POR PETICION
+--------------------------------------------------------------------------------
+
+ [OK]    el login responde HTTP 201 Created                 3.601/3.601
+ [OK]    la respuesta entrega un token JWT valido           3.601/3.601
+ [OK]    el tiempo de respuesta es menor a 1,5 s            3.601/3.601
+
+--------------------------------------------------------------------------------
+ REPARTO POR CREDENCIAL DEL CSV
+--------------------------------------------------------------------------------
+
+ donero              721 peticiones
+ johnd               720 peticiones
+ kevinryan           720 peticiones
+ derek               720 peticiones
+ mor_2314            720 peticiones
+
+--------------------------------------------------------------------------------
+ UMBRALES DECLARADOS (los evalua k6)
+--------------------------------------------------------------------------------
+
+ [OK]    peticiones_por_usuario{usuario:johnd}        count>0
+ [OK]    http_req_failed                              rate<0.03
+ [OK]    checks                                       rate>0.97
+ [OK]    dropped_iterations                           count==0
+ [OK]    http_req_duration                            p(95)<1500
+ [OK]    http_req_duration                            p(99)<1500
+ [OK]    peticiones_por_usuario{usuario:kevinryan}    count>0
+ [OK]    login_exitoso                                rate>0.97
+ [OK]    peticiones_por_usuario{usuario:derek}        count>0
+ [OK]    peticiones_por_usuario{usuario:mor_2314}     count>0
+ [OK]    http_reqs                                    rate>=19.5
+ [OK]    peticiones_por_usuario{usuario:donero}       count>0
+ [OK]    peticiones_dentro_del_umbral                 rate>0.97
+
+================================================================================
+ RESULTADO: PRUEBA EXITOSA - todos los umbrales se cumplen
+================================================================================

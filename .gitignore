@@ -25,3 +25,12 @@ tmp/
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# ---- Ejercicio 03: salida de cada ejecucion de k6 ----
+# La carpeta se versiona vacia (resultados/.gitkeep) para que exista en un
+# clon nuevo: k6 escribe los reportes ahi y no puede crear directorios.
+ejercicio-03-carga-fakestore/resultados/*
+!ejercicio-03-carga-fakestore/resultados/.gitkeep
+
+# ---- Ejercicio 03: k6 portable, si se descarga ----
+ejercicio-03-carga-fakestore/herramientas/

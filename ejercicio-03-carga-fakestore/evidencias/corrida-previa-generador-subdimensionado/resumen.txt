@@ -1,0 +1,77 @@
+================================================================================
+ EJERCICIO 3 - PRUEBA DE CARGA DEL SERVICIO DE LOGIN
+ POST https://fakestoreapi.com/auth/login
+================================================================================
+
+ Escenario ........... carga
+ Fecha ............... 14/11/2026 11:21:58
+ Duracion ............ 180,4 s
+ Peticiones .......... 3.584
+ Credenciales ........ 5 usuarios parametrizados desde el CSV
+
+--------------------------------------------------------------------------------
+ CRITERIOS DE ACEPTACION DEL ENUNCIADO
+--------------------------------------------------------------------------------
+
+ [NO CUMPLE]  1. Alcanzar al menos 20 TPS
+                Medido: 19,87 TPS (3.584 peticiones en 180,4 s)
+                (minimo aceptado 19,50 TPS, iteraciones descartadas 17)
+
+ [NO CUMPLE]  2. Tiempo de respuesta maximo 1,5 s
+                Medido: p95 806,32 ms | p99 1.708,22 ms | maximo 5.253,59 ms
+                (54 de 3.584 peticiones sobre el umbral (1,51 %))
+
+ [CUMPLE   ]  3. Tasa de error menor al 3 % del total
+                Medido: 0,00 % (0 de 3.584 peticiones)
+                (logins exitosos con token 100,00 %)
+
+--------------------------------------------------------------------------------
+ TIEMPO DE RESPUESTA (ms)
+--------------------------------------------------------------------------------
+
+   min       avg       med       p(90)     p(95)     p(99)     max       
+   326       448       383       514       806       1.708     5.254     
+
+ Espera del servidor (http_req_waiting) p95 ... 804,36 ms
+ Conexion TCP (http_req_connecting) maximo .... 1.162,76 ms
+ Handshake TLS (http_req_tls_handshaking) max . 6.307,37 ms
+
+--------------------------------------------------------------------------------
+ VALIDACIONES POR PETICION
+--------------------------------------------------------------------------------
+
+ [OK]    el login responde HTTP 201 Created                 3.584/3.584
+ [OK]    la respuesta entrega un token JWT valido           3.584/3.584
+ [FALLA] el tiempo de respuesta es menor a 1,5 s            3.530/3.584
+
+--------------------------------------------------------------------------------
+ REPARTO POR CREDENCIAL DEL CSV
+--------------------------------------------------------------------------------
+
+ johnd               717 peticiones
+ kevinryan           717 peticiones
+ donero              717 peticiones
+ derek               717 peticiones
+ mor_2314            716 peticiones
+
+--------------------------------------------------------------------------------
+ UMBRALES DECLARADOS (los evalua k6)
+--------------------------------------------------------------------------------
+
+ [FALLA] dropped_iterations                           count==0
+ [FALLA] http_req_duration                            p(99)<1500
+ [OK]    peticiones_por_usuario{usuario:kevinryan}    count>0
+ [OK]    http_reqs                                    rate>=19.5
+ [OK]    peticiones_por_usuario{usuario:donero}       count>0
+ [OK]    login_exitoso                                rate>0.97
+ [OK]    peticiones_por_usuario{usuario:derek}        count>0
+ [OK]    http_req_failed                              rate<0.03
+ [OK]    peticiones_dentro_del_umbral                 rate>0.97
+ [OK]    peticiones_por_usuario{usuario:mor_2314}     count>0
+ [OK]    http_req_duration                            p(95)<1500
+ [OK]    checks                                       rate>0.97
+ [OK]    peticiones_por_usuario{usuario:johnd}        count>0
+
+================================================================================
+ RESULTADO: PRUEBA FALLIDA - hay umbrales incumplidos (k6 sale con codigo 99)
+================================================================================
