@@ -2,37 +2,33 @@
  * Configuracion global de la ejecucion.
  *
  * Deja disponibles para todos los casos los DATOS DE ENTRADA:
- *   - urlBase          : raiz de los servicios (sobreescribible con -Dapi.base.url)
- *   - usuario          : nombre de usuario distinto en cada ejecucion
- *   - passwordBase64   : el password tal como lo envia el front de Demoblaze (Base64)
+ *   - urlBase                  : raiz de los servicios (-Dapi.base.url para cambiarla)
+ *   - usuarioNuevo             : usuario que todavia no existe (CP01 y CP02)
+ *   - usuarioRegistrado        : usuario ya registrado (CP03 y CP04)
+ *   - passwordBase64           : el password tal como lo envia el front (Base64)
+ *   - passwordIncorrectoBase64 : password valido que no corresponde al usuario
  */
 function fn() {
-
-  var Codificador = Java.type('com.qa.demoblaze.utils.Codificador');
 
   var urlBase = karate.properties['api.base.url'];
   if (!urlBase) {
     urlBase = 'https://api.demoblaze.com';
   }
 
-  var passwordPlano = 'Prueba.2026';
-  var passwordIncorrectoPlano = 'PasswordIncorrecto.999';
+  var datos = karate.callSingle('classpath:com/qa/demoblaze/fixtures/datos-de-prueba.js');
 
   var configuracion = {
     urlBase: urlBase,
-    usuario: Codificador.usuarioUnico('qa.auto'),
-    passwordPlano: passwordPlano,
-    passwordBase64: Codificador.aBase64(passwordPlano),
-    passwordIncorrectoPlano: passwordIncorrectoPlano,
-    passwordIncorrectoBase64: Codificador.aBase64(passwordIncorrectoPlano)
+    usuarioNuevo: datos.usuarioNuevo,
+    usuarioRegistrado: datos.usuarioRegistrado,
+    passwordPlano: datos.passwordPlano,
+    passwordBase64: datos.passwordBase64,
+    passwordIncorrectoPlano: datos.passwordIncorrectoPlano,
+    passwordIncorrectoBase64: datos.passwordIncorrectoBase64
   };
 
   karate.configure('connectTimeout', 20000);
   karate.configure('readTimeout', 20000);
-
-  karate.log('=== Datos de entrada de esta ejecucion ===');
-  karate.log('URL base ........ ' + configuracion.urlBase);
-  karate.log('Usuario ......... ' + configuracion.usuario);
 
   return configuracion;
 }

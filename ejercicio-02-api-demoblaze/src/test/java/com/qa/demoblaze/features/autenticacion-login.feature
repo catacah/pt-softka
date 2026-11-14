@@ -12,8 +12,8 @@ Feature: Autenticacion de usuarios - POST /login
     * def registrado = callonce read('classpath:com/qa/demoblaze/fixtures/usuario-registrado.feature')
 
     # ENTRADAS de los dos casos: el mismo usuario con password correcto e incorrecto
-    * def credencialesCorrectas = { username: '#(usuario)', password: '#(passwordBase64)' }
-    * def credencialesIncorrectas = { username: '#(usuario)', password: '#(passwordIncorrectoBase64)' }
+    * def credencialesCorrectas = { username: '#(usuarioRegistrado)', password: '#(passwordBase64)' }
+    * def credencialesIncorrectas = { username: '#(usuarioRegistrado)', password: '#(passwordIncorrectoBase64)' }
 
   @CP03 @smoke
   Scenario: CP03 - Autenticarse con usuario y password correctos
@@ -36,9 +36,10 @@ Feature: Autenticacion de usuarios - POST /login
     And match token == '#notnull'
 
     # El token no esta firmado: es Base64 reversible que contiene el propio usuario.
+    # Se comprueba aqui y se documenta como hallazgo de seguridad en conclusiones.txt.
     * def Codificador = Java.type('com.qa.demoblaze.utils.Codificador')
     * def tokenDecodificado = Codificador.desdeBase64(token)
-    And match tokenDecodificado contains usuario
+    And match tokenDecodificado contains usuarioRegistrado
     * print 'CP03 - token decodificado:', tokenDecodificado
 
   @CP04
@@ -55,3 +56,4 @@ Feature: Autenticacion de usuarios - POST /login
     # respuesta NO contiene ningun token.
     And match response == { errorMessage: 'Wrong password.' }
     * print 'CP04 - salida recibida:', response
+

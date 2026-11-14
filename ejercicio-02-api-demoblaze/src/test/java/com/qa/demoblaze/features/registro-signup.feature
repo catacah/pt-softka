@@ -12,7 +12,7 @@ Feature: Registro de usuarios - POST /signup
     * url urlBase
     # ENTRADA comun: el usuario generado para esta ejecucion y el password en Base64,
     # porque el front de Demoblaze nunca envia el password en claro.
-    * def credencialesNuevas = { username: '#(usuario)', password: '#(passwordBase64)' }
+    * def credencialesNuevas = { username: '#(usuarioNuevo)', password: '#(passwordBase64)' }
 
   @CP01 @smoke
   Scenario: CP01 - Crear un nuevo usuario en signup
@@ -25,7 +25,7 @@ Feature: Registro de usuarios - POST /signup
     And match header content-type contains 'application/json'
 
     # SALIDA observada: el cuerpo es la cadena JSON vacia ("") y NO trae errorMessage.
-    # El exito solo se puede inferir por la AUSENCIA de error.
+    # El exito solo se puede inferir por la AUSENCIA de error (ver conclusiones.txt).
     * def cuerpoRecibido = response.trim()
     And match cuerpoRecibido == '""'
     And match response !contains 'errorMessage'
@@ -34,7 +34,8 @@ Feature: Registro de usuarios - POST /signup
   @CP02
   Scenario: CP02 - Intentar crear un usuario que ya existe
     # Este caso se apoya en CP01: reenvia el MISMO usuario que acaba de registrarse,
-    # que es exactamente el escenario que pide el enunciado.
+    # que es exactamente el escenario que pide el enunciado. Por eso la suite corre en
+    # un solo hilo y en orden (si se filtra solo @CP02, hay que ejecutar antes @CP01).
     * print 'CP02 - entrada enviada (usuario ya registrado en CP01):', credencialesNuevas
 
     Given path 'signup'
@@ -43,5 +44,7 @@ Feature: Registro de usuarios - POST /signup
     Then status 200
 
     # SALIDA observada: el error viaja en el cuerpo y el status sigue siendo 200 (no 409).
+    # La comparacion con == es estricta: el cuerpo tiene esa unica propiedad.
     And match response == { errorMessage: 'This user already exist.' }
     * print 'CP02 - salida recibida:', response
+
