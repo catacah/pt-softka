@@ -10,6 +10,7 @@ propias instrucciones, dependencias, scripts y evidencias.
 |---|-----------|---------|-------|--------|
 | 01 | [E2E compra en SauceDemo](ejercicio-01-e2e-saucedemo/) | Prueba funcional automatizada del flujo de compra en `saucedemo.com`: login, dos productos al carrito, carrito, formulario y confirmación del pedido | Serenity BDD 5.4.2 + Cucumber 8 + Screenplay (Java 17) | ✅ 1 escenario / 1 exitoso |
 | 02 | [Servicios REST de Demoblaze](ejercicio-02-api-demoblaze/) | Pruebas de los servicios `POST /signup` y `POST /login` de `api.demoblaze.com`: crear usuario, usuario duplicado, login correcto y login incorrecto, con las entradas y salidas capturadas | Karate 1.5.2 + JUnit 5 (Java 17) | ✅ 4 casos / 4 exitosos |
+| 03 | [Carga del login de FakeStoreAPI](ejercicio-03-carga-fakestore/) | Prueba de carga de `POST /auth/login` a **20 TPS durante 3 minutos** con las credenciales parametrizadas desde un `.csv`, validando tiempo de respuesta ≤ 1,5 s y tasa de error < 3% | k6 2.4.0 | ✅ 3 criterios / 3 cumplidos |
 
 ## Cómo ejecutar
 
@@ -25,15 +26,23 @@ cd ejercicio-01-e2e-saucedemo
 cd ejercicio-02-api-demoblaze
 ./mvnw clean test              # Linux / macOS / Git Bash
 .\mvnw.cmd clean test          # Windows
+
+# Ejercicio 03 - Prueba de carga (3 minutos)
+cd ejercicio-03-carga-fakestore
+./scripts/run-load-test.sh     # Linux / macOS / Git Bash
+.\scripts\run-load-test.ps1    # Windows
 ```
 
-No hace falta tener Maven instalado: cada proyecto incluye **Maven Wrapper**.
-Solo se requiere **JDK 17+** (y **Google Chrome** únicamente para el ejercicio 01).
+Los ejercicios 01 y 02 no necesitan Maven instalado: cada proyecto incluye
+**Maven Wrapper**, y solo se requiere **JDK 17+** (y **Google Chrome** únicamente
+para el ejercicio 01). El ejercicio 03 no usa Java: solo necesita **k6 2.4.0+**,
+que es un ejecutable único (`.\scripts\instalar-k6.ps1` lo instala en Windows).
 
 Instrucciones detalladas paso a paso, opciones de ejecución y solución de
 problemas en el `readme.txt` de cada ejercicio:
 [ejercicio 01](ejercicio-01-e2e-saucedemo/readme.txt) ·
-[ejercicio 02](ejercicio-02-api-demoblaze/readme.txt).
+[ejercicio 02](ejercicio-02-api-demoblaze/readme.txt) ·
+[ejercicio 03](ejercicio-03-carga-fakestore/readme.txt).
 
 ## Cómo está organizado el trabajo
 
@@ -58,6 +67,7 @@ Para ver el avance de un ejercicio:
 git log --oneline --graph --all      # el mapa completo, con sus ramas
 git log --oneline v1.0.0             # los pasos hasta la primera entrega
 git log --oneline v1.0.0..v1.1.0     # lo que agregó la segunda entrega
+git log --oneline v1.1.1..v1.2.0     # lo que agregó la tercera entrega
 git tag -n                           # las entregas
 ```
 
@@ -67,6 +77,7 @@ git tag -n                           # las entregas
 |---------|-----------|
 | `readme.txt` | Instrucciones paso a paso de ejecución |
 | `conclusiones.txt` | Hallazgos y conclusiones del ejercicio |
-| `evidencias/reporte-*.zip` | Reporte HTML de la ejecución verificada (descomprimir y abrir la página principal) |
-| `evidencias/capturas/` o `evidencias/salidas/` | Evidencia revisable directamente desde GitHub: capturas del flujo (ej. 01) o entradas y salidas capturadas por caso (ej. 02) |
+| `evidencias/` | Evidencia de la ejecución verificada: reporte HTML (en `.zip` si son varios archivos, o suelto si es autocontenido como en el ej. 03), consola completa y métricas o salidas capturadas |
+| `evidencias/capturas/`, `salidas/` o `metricas-*` | Evidencia revisable directamente desde GitHub: capturas del flujo (ej. 01), entradas y salidas por caso (ej. 02) o las métricas de cada petición (ej. 03) |
+| `evidencias/LEEME.txt` | Qué es cada archivo de evidencia y cómo leerlo |
 | `scripts/` | Scripts de ejecución para Windows y Linux/macOS |
