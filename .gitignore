@@ -34,3 +34,6 @@ ejercicio-03-carga-fakestore/resultados/*
 
 # ---- Ejercicio 03: k6 portable, si se descarga ----
 ejercicio-03-carga-fakestore/herramientas/
+
+# ---- Archivos de bloqueo que deja Word mientras un documento esta abierto ----
+~$*
