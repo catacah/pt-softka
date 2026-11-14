@@ -31,6 +31,23 @@ Feature: Registro de usuarios - POST /signup
     And match response !contains 'errorMessage'
     * print 'CP01 - salida recibida:', cuerpoRecibido
 
+    * def datosEvidencia =
+      """
+      {
+        caso: 'CP01',
+        descripcion: 'Crear un nuevo usuario en signup',
+        servicio: '/signup',
+        entrada: '#(credencialesNuevas)',
+        statusHttp: '#(responseStatus)',
+        cabecerasSalida: '#(responseHeaders)',
+        cuerpoSalida: '#(cuerpoRecibido)',
+        tiempoRespuestaMs: '#(responseTime)',
+        resultadoEsperado: 'HTTP 200 y cuerpo sin errorMessage: el usuario queda creado',
+        observaciones: 'El servicio no devuelve 201 ni representacion del usuario creado'
+      }
+      """
+    * call read('classpath:com/qa/demoblaze/fixtures/evidencia.feature') datosEvidencia
+
   @CP02
   Scenario: CP02 - Intentar crear un usuario que ya existe
     # Este caso se apoya en CP01: reenvia el MISMO usuario que acaba de registrarse,
@@ -48,3 +65,19 @@ Feature: Registro de usuarios - POST /signup
     And match response == { errorMessage: 'This user already exist.' }
     * print 'CP02 - salida recibida:', response
 
+    * def datosEvidencia =
+      """
+      {
+        caso: 'CP02',
+        descripcion: 'Intentar crear un usuario ya existente',
+        servicio: '/signup',
+        entrada: '#(credencialesNuevas)',
+        statusHttp: '#(responseStatus)',
+        cabecerasSalida: '#(responseHeaders)',
+        cuerpoSalida: '#(response)',
+        tiempoRespuestaMs: '#(responseTime)',
+        resultadoEsperado: "HTTP 200 y errorMessage 'This user already exist.'",
+        observaciones: 'El duplicado se rechaza con HTTP 200, no con 409 Conflict'
+      }
+      """
+    * call read('classpath:com/qa/demoblaze/fixtures/evidencia.feature') datosEvidencia

@@ -42,6 +42,23 @@ Feature: Autenticacion de usuarios - POST /login
     And match tokenDecodificado contains usuarioRegistrado
     * print 'CP03 - token decodificado:', tokenDecodificado
 
+    * def datosEvidencia =
+      """
+      {
+        caso: 'CP03',
+        descripcion: 'Usuario y password correctos en login',
+        servicio: '/login',
+        entrada: '#(credencialesCorrectas)',
+        statusHttp: '#(responseStatus)',
+        cabecerasSalida: '#(responseHeaders)',
+        cuerpoSalida: '#(cuerpoRecibido)',
+        tiempoRespuestaMs: '#(responseTime)',
+        resultadoEsperado: "HTTP 200 y cuerpo 'Auth_token: <token>'",
+        observaciones: '#("Token decodificado (Base64 reversible): " + tokenDecodificado)'
+      }
+      """
+    * call read('classpath:com/qa/demoblaze/fixtures/evidencia.feature') datosEvidencia
+
   @CP04
   Scenario: CP04 - Intentar autenticarse con password incorrecto
     * print 'CP04 - entrada enviada:', credencialesIncorrectas
@@ -57,3 +74,19 @@ Feature: Autenticacion de usuarios - POST /login
     And match response == { errorMessage: 'Wrong password.' }
     * print 'CP04 - salida recibida:', response
 
+    * def datosEvidencia =
+      """
+      {
+        caso: 'CP04',
+        descripcion: 'Usuario correcto y password incorrecto en login',
+        servicio: '/login',
+        entrada: '#(credencialesIncorrectas)',
+        statusHttp: '#(responseStatus)',
+        cabecerasSalida: '#(responseHeaders)',
+        cuerpoSalida: '#(response)',
+        tiempoRespuestaMs: '#(responseTime)',
+        resultadoEsperado: "HTTP 200 y errorMessage 'Wrong password.'",
+        observaciones: 'Las credenciales invalidas se rechazan con HTTP 200, no con 401'
+      }
+      """
+    * call read('classpath:com/qa/demoblaze/fixtures/evidencia.feature') datosEvidencia
