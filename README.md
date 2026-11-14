@@ -11,10 +11,13 @@ propias instrucciones, dependencias, scripts y evidencias.
 | 01 | [E2E compra en SauceDemo](ejercicio-01-e2e-saucedemo/) | Prueba funcional automatizada del flujo de compra en `saucedemo.com`: login, dos productos al carrito, carrito, formulario y confirmación del pedido | Serenity BDD 5.4.2 + Cucumber 8 + Screenplay (Java 17) | ✅ 1 escenario / 1 exitoso |
 | 02 | [Servicios REST de Demoblaze](ejercicio-02-api-demoblaze/) | Pruebas de los servicios `POST /signup` y `POST /login` de `api.demoblaze.com`: crear usuario, usuario duplicado, login correcto y login incorrecto, con las entradas y salidas capturadas | Karate 1.5.2 + JUnit 5 (Java 17) | ✅ 4 casos / 4 exitosos |
 | 03 | [Carga del login de FakeStoreAPI](ejercicio-03-carga-fakestore/) | Prueba de carga de `POST /auth/login` a **20 TPS durante 3 minutos** con las credenciales parametrizadas desde un `.csv`, validando tiempo de respuesta ≤ 1,5 s y tasa de error < 3% | k6 2.4.0 | ✅ 3 criterios / 3 cumplidos |
+| 04 | [Análisis de resultados](ejercicio-04-analisis-resultados/) | Informe sobre una prueba de carga ya ejecutada (140 VUs, 63 min, 276.650 peticiones): hallazgos, conclusiones y recomendaciones, con la lectura del diagrama de usuarios virtuales frente a peticiones por segundo | Análisis de un `textSummary` de k6 y de su monitoreo | 📄 [Informe](ejercicio-04-analisis-resultados/InformeResultados.md) · 9 hallazgos |
 
 ## Cómo ejecutar
 
-Cada ejercicio se ejecuta desde su propia carpeta:
+Los ejercicios 01 a 03 se ejecutan desde su propia carpeta. El 04 no se ejecuta:
+es un informe de análisis, y se lee
+[directamente desde aquí](ejercicio-04-analisis-resultados/InformeResultados.md).
 
 ```bash
 # Ejercicio 01 - E2E con navegador
@@ -42,7 +45,8 @@ Instrucciones detalladas paso a paso, opciones de ejecución y solución de
 problemas en el `readme.txt` de cada ejercicio:
 [ejercicio 01](ejercicio-01-e2e-saucedemo/readme.txt) ·
 [ejercicio 02](ejercicio-02-api-demoblaze/readme.txt) ·
-[ejercicio 03](ejercicio-03-carga-fakestore/readme.txt).
+[ejercicio 03](ejercicio-03-carga-fakestore/readme.txt) ·
+[ejercicio 04](ejercicio-04-analisis-resultados/readme.txt).
 
 ## Cómo está organizado el trabajo
 
@@ -68,6 +72,7 @@ git log --oneline --graph --all      # el mapa completo, con sus ramas
 git log --oneline v1.0.0             # los pasos hasta la primera entrega
 git log --oneline v1.0.0..v1.1.0     # lo que agregó la segunda entrega
 git log --oneline v1.1.1..v1.2.0     # lo que agregó la tercera entrega
+git log --oneline v1.2.0..v1.3.0     # lo que agregó la cuarta entrega
 git tag -n                           # las entregas
 ```
 
@@ -75,8 +80,8 @@ git tag -n                           # las entregas
 
 | Archivo | Contenido |
 |---------|-----------|
-| `readme.txt` | Instrucciones paso a paso de ejecución |
-| `conclusiones.txt` | Hallazgos y conclusiones del ejercicio |
+| `readme.txt` | Instrucciones paso a paso de ejecución (en el ej. 04, de dónde sale cada dato del informe) |
+| `conclusiones.txt` | Hallazgos y conclusiones del ejercicio. En el ej. 04 ese papel lo cumple el propio entregable, `InformeResultados.doc` (también en `.docx` y en `.md`, que GitHub muestra sin descargar) |
 | `evidencias/` | Evidencia de la ejecución verificada: reporte HTML (en `.zip` si son varios archivos, o suelto si es autocontenido como en el ej. 03), consola completa y métricas o salidas capturadas |
 | `evidencias/capturas/`, `salidas/` o `metricas-*` | Evidencia revisable directamente desde GitHub: capturas del flujo (ej. 01), entradas y salidas por caso (ej. 02) o las métricas de cada petición (ej. 03) |
 | `evidencias/LEEME.txt` | Qué es cada archivo de evidencia y cómo leerlo |
