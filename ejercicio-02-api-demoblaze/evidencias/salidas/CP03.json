@@ -1,0 +1,46 @@
+{
+  "caso": "CP03",
+  "descripcion": "Usuario y password correctos en login",
+  "ejecutado": "2026-11-13 20:10:57",
+  "resultadoEsperado": "HTTP 200 y cuerpo 'Auth_token: <token>'",
+  "observaciones": "Token decodificado (Base64 reversible): qa.login.20261113.2010558021795218",
+  "entrada": {
+    "metodo": "POST",
+    "url": "https://api.demoblaze.com/login",
+    "cabeceras": {
+      "Content-Type": "application/json"
+    },
+    "cuerpo": {
+      "username": "qa.login.20261113.201055802",
+      "password": "UHJ1ZWJhLjIwMjY="
+    },
+    "passwordEnClaro": "Prueba.2026"
+  },
+  "salida": {
+    "statusHttp": 200,
+    "cabeceras": {
+      "content-type": [
+        "application/json"
+      ],
+      "vary": [
+        "Accept-Encoding"
+      ],
+      "x-cloud-trace-context": [
+        "863ba52eed1c666d2023f7c03ef496da"
+      ],
+      "date": [
+        "Sat, 14 Nov 2026 01:12:04 GMT"
+      ],
+      "server": [
+        "Google Frontend"
+      ],
+      "Transfer-Encoding": [
+        "chunked"
+      ],
+      "Set-Cookie": [
+      ]
+    },
+    "cuerpo": "\"Auth_token: cWEubG9naW4uMjAyNjExMTMuMjAxMDU1ODAyMTc5NTIxOA==\"",
+    "tiempoRespuestaMs": 421
+  }
+}

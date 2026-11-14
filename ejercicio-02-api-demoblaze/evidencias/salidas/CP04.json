@@ -1,0 +1,48 @@
+{
+  "caso": "CP04",
+  "descripcion": "Usuario correcto y password incorrecto en login",
+  "ejecutado": "2026-11-13 20:10:57",
+  "resultadoEsperado": "HTTP 200 y errorMessage 'Wrong password.'",
+  "observaciones": "Las credenciales invalidas se rechazan con HTTP 200, no con 401",
+  "entrada": {
+    "metodo": "POST",
+    "url": "https://api.demoblaze.com/login",
+    "cabeceras": {
+      "Content-Type": "application/json"
+    },
+    "cuerpo": {
+      "username": "qa.login.20261113.201055802",
+      "password": "UGFzc3dvcmRJbmNvcnJlY3RvLjk5OQ=="
+    },
+    "passwordEnClaro": "Prueba.2026"
+  },
+  "salida": {
+    "statusHttp": 200,
+    "cabeceras": {
+      "content-type": [
+        "application/json"
+      ],
+      "vary": [
+        "Accept-Encoding"
+      ],
+      "x-cloud-trace-context": [
+        "87faffd8f10c3bfc7da539c83bfd9911"
+      ],
+      "date": [
+        "Sat, 14 Nov 2026 01:12:05 GMT"
+      ],
+      "server": [
+        "Google Frontend"
+      ],
+      "Transfer-Encoding": [
+        "chunked"
+      ],
+      "Set-Cookie": [
+      ]
+    },
+    "cuerpo": {
+      "errorMessage": "Wrong password."
+    },
+    "tiempoRespuestaMs": 384
+  }
+}

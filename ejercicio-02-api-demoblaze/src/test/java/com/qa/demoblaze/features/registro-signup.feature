@@ -1,0 +1,83 @@
+# Casos de prueba del servicio de REGISTRO de Demoblaze.
+#
+# Nota sobre el idioma: Karate no admite dialectos de Gherkin (no existe
+# "# language: es"), por lo que las palabras clave estructurales -Feature,
+# Background, Scenario, Given, When, Then, And- son las unicas en ingles.
+# Todo lo demas (titulos, pasos, variables y comentarios) esta en espaniol.
+
+@signup @ejercicio-02
+Feature: Registro de usuarios - POST /signup
+
+  Background:
+    * url urlBase
+    # ENTRADA comun: el usuario generado para esta ejecucion y el password en Base64,
+    # porque el front de Demoblaze nunca envia el password en claro.
+    * def credencialesNuevas = { username: '#(usuarioNuevo)', password: '#(passwordBase64)' }
+
+  @CP01 @smoke
+  Scenario: CP01 - Crear un nuevo usuario en signup
+    * print 'CP01 - entrada enviada:', credencialesNuevas
+
+    Given path 'signup'
+    And request credencialesNuevas
+    When method post
+    Then status 200
+    And match header content-type contains 'application/json'
+
+    # SALIDA observada: el cuerpo es la cadena JSON vacia ("") y NO trae errorMessage.
+    # El exito solo se puede inferir por la AUSENCIA de error (ver conclusiones.txt).
+    * def cuerpoRecibido = response.trim()
+    And match cuerpoRecibido == '""'
+    And match response !contains 'errorMessage'
+    * print 'CP01 - salida recibida:', cuerpoRecibido
+
+    * def datosEvidencia =
+      """
+      {
+        caso: 'CP01',
+        descripcion: 'Crear un nuevo usuario en signup',
+        servicio: '/signup',
+        entrada: '#(credencialesNuevas)',
+        statusHttp: '#(responseStatus)',
+        cabecerasSalida: '#(responseHeaders)',
+        cuerpoSalida: '#(cuerpoRecibido)',
+        tiempoRespuestaMs: '#(responseTime)',
+        resultadoEsperado: 'HTTP 200 y cuerpo sin errorMessage: el usuario queda creado',
+        observaciones: 'El servicio no devuelve 201 ni representacion del usuario creado'
+      }
+      """
+    * call read('classpath:com/qa/demoblaze/fixtures/evidencia.feature') datosEvidencia
+
+  @CP02
+  Scenario: CP02 - Intentar crear un usuario que ya existe
+    # Este caso se apoya en CP01: reenvia el MISMO usuario que acaba de registrarse,
+    # que es exactamente el escenario que pide el enunciado. Por eso la suite corre en
+    # un solo hilo y en orden (si se filtra solo @CP02, hay que ejecutar antes @CP01).
+    * print 'CP02 - entrada enviada (usuario ya registrado en CP01):', credencialesNuevas
+
+    Given path 'signup'
+    And request credencialesNuevas
+    When method post
+    Then status 200
+
+    # SALIDA observada: el error viaja en el cuerpo y el status sigue siendo 200 (no 409).
+    # La comparacion con == es estricta: el cuerpo tiene esa unica propiedad.
+    And match response == { errorMessage: 'This user already exist.' }
+    * print 'CP02 - salida recibida:', response
+
+    * def datosEvidencia =
+      """
+      {
+        caso: 'CP02',
+        descripcion: 'Intentar crear un usuario ya existente',
+        servicio: '/signup',
+        entrada: '#(credencialesNuevas)',
+        statusHttp: '#(responseStatus)',
+        cabecerasSalida: '#(responseHeaders)',
+        cuerpoSalida: '#(response)',
+        tiempoRespuestaMs: '#(responseTime)',
+        resultadoEsperado: "HTTP 200 y errorMessage 'This user already exist.'",
+        observaciones: 'El duplicado se rechaza con HTTP 200, no con 409 Conflict'
+      }
+      """
+    * call read('classpath:com/qa/demoblaze/fixtures/evidencia.feature') datosEvidencia

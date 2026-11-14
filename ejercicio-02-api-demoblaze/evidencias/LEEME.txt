@@ -1,0 +1,46 @@
+EVIDENCIAS DE LA EJECUCION
+================================================================================
+
+Todo lo que hay aqui corresponde a la ejecucion verificada del 13/11/2026
+(2 features, 4 casos, 4 exitosos, 0 fallidos).
+
+Contenido de esta carpeta:
+
+  salidas/CP01.json ... CP04.json
+      Un archivo por caso de prueba con la ENTRADA enviada y la SALIDA recibida:
+
+        entrada : metodo, URL, cabeceras y cuerpo enviado
+                  (incluye el password en claro y su equivalente en Base64,
+                   que es lo que realmente viaja)
+        salida  : codigo HTTP, cabeceras de respuesta, cuerpo recibido y
+                  tiempo de respuesta en milisegundos
+
+      Son los archivos que responden directamente al enunciado ("identificar las
+      entradas y capturar las salidas"). Se pueden leer desde GitHub sin
+      descargar nada. Los genera la propia suite en target/evidencias/ cada vez
+      que se ejecuta.
+
+  salidas/consola-ejecucion.txt
+      Salida completa de la consola de la ejecucion verificada, con la traza HTTP
+      de Karate: por cada caso se ve la peticion enviada (cabeceras y cuerpo) y
+      la respuesta recibida, ademas del resumen final y el BUILD SUCCESS.
+
+  reporte-karate.zip
+      Reporte HTML de Karate de esa misma ejecucion.
+
+      Para verlo:
+        1. Descomprimir el archivo.
+        2. Abrir "karate-summary.html" en cualquier navegador.
+           Desde ahi se entra al detalle de cada caso, paso a paso.
+           ("karate-tags.html" muestra el resultado por etiqueta y
+            "karate-timeline.html" la linea de tiempo de la ejecucion).
+
+      Va comprimido porque el reporte son ~15 archivos entre HTML, JSON y
+      recursos estaticos que Karate genera en cada corrida.
+
+No hay capturas de pantalla en este ejercicio: al ser pruebas de servicios, la
+evidencia util es el par peticion/respuesta, que es justamente lo que contienen
+los archivos de salidas/ y el reporte.
+
+Para generar evidencia nueva basta con ejecutar la suite (ver readme.txt):
+queda en target/evidencias/ y en target/karate-reports/.

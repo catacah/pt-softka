@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Karate registra cada peticion y cada respuesta en el log. Se deja en DEBUG el
+    logger de Karate (es la traza que sustenta la evidencia) y se baja el ruido del
+    cliente HTTP y del motor de JavaScript.
+-->
+<configuration>
+    <appender name="CONSOLA" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss} %-5level %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="com.intuit.karate" level="DEBUG"/>
+    <logger name="org.apache.hc" level="WARN"/>
+    <logger name="io.netty" level="WARN"/>
+
+    <root level="WARN">
+        <appender-ref ref="CONSOLA"/>
+    </root>
+</configuration>
