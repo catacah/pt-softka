@@ -16,4 +16,6 @@ mvnw.cmd  text eol=crlf
 *.gif     binary
 *.jar     binary
 *.zip     binary
+*.doc     binary
+*.docx    binary
 *.gz      binary
