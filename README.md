@@ -46,18 +46,19 @@ ejercicio:
 | `develop` | Donde se integra el trabajo del día a día |
 | `feature/*` | Una rama por ejercicio; ahí van los commits pequeños del desarrollo |
 | `release/*` | Preparación de la entrega: se actualiza la documentación y se publica en `main` |
+| `hotfix/*` | Correcciones puntuales que tienen que llegar directo a `main` |
 
-Las ramas de `feature` se integran con *merge* sin *fast-forward*, así el
-historial muestra claramente dónde empieza y dónde termina cada ejercicio.
-Se dejan publicadas a propósito, para que se pueda revisar el desarrollo rama
-por rama; en un proyecto de equipo se borran después de integrarlas.
+Las ramas de `feature` y de `release` se integran con *merge* sin *fast-forward*
+y se borran al terminar. El historial no pierde nada: el grafo sigue mostrando
+dónde empieza y dónde termina cada ejercicio, con todos sus commits.
 
 Para ver el avance de un ejercicio:
 
 ```bash
-git log --oneline --graph --all          # el mapa completo
-git log --oneline feature/ejercicio-02-api-demoblaze   # los pasos de un ejercicio
-git tag -n                               # las entregas
+git log --oneline --graph --all      # el mapa completo, con sus ramas
+git log --oneline v1.0.0             # los pasos hasta la primera entrega
+git log --oneline v1.0.0..v1.1.0     # lo que agregó la segunda entrega
+git tag -n                           # las entregas
 ```
 
 ## Entregables por ejercicio
